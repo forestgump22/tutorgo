@@ -56,4 +56,8 @@ public interface SesionRepository extends JpaRepository<Sesion, Long> {
                                                         LocalDateTime horaInicialDesde,
                                                         LocalDateTime horaInicialHasta
     );
+
+    List<Sesion> findByEstudiante_User_EmailOrderByFechaAscHoraInicialAsc(String email);
+
+    List<Sesion> findByTutor_User_EmailOrderByFechaAscHoraInicialAsc(String email);
 }

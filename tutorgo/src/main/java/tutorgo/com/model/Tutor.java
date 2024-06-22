@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +23,6 @@ public class Tutor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "usuario_id", nullable = false, unique = true, referencedColumnName = "id")
     private User user;
@@ -30,7 +30,7 @@ public class Tutor {
     @Column(name = "tarifa_hora", nullable = false)
     private Integer tarifaHora;
 
-    @Column(length = 150, nullable = false)
+    @Column(length = 150, nullable = false, columnDefinition = "TEXT")
     private String rubro;
 
     @Column(columnDefinition = "TEXT")
@@ -40,17 +40,20 @@ public class Tutor {
     private Float estrellasPromedio = 0.0f; // Valor por defecto
 
     @OneToMany(mappedBy = "tutor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Disponibilidad> disponibilidades = new ArrayList<>();
 
     @OneToMany(mappedBy = "tutor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Sesion> sesionesComoTutor = new ArrayList<>();
 
     @OneToMany(mappedBy = "tutor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Pago> pagosRecibidos = new ArrayList<>();
 
     @OneToMany(mappedBy = "tutor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<NotificacionTutor> notificacionesTutor = new ArrayList<>();
-
 
     @Override
     public boolean equals(Object o) {

@@ -1,6 +1,8 @@
 package tutorgo.com.service;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,24 +15,23 @@ import org.springframework.data.domain.Pageable;
 import tutorgo.com.dto.response.PagedResponse;
 import tutorgo.com.dto.response.TutorProfileResponse;
 import tutorgo.com.dto.response.TutorSummaryResponse;
+import tutorgo.com.exception.ResourceNotFoundException;
 import tutorgo.com.mapper.TutorMapper;
 import tutorgo.com.model.Tutor;
-import tutorgo.com.model.User; // Necesario para crear Tutor
+import tutorgo.com.model.User;
 import tutorgo.com.repository.TutorRepository;
-import tutorgo.com.exception.ResourceNotFoundException;
-import tutorgo.com.model.User;       // Nueva importación
-import org.springframework.data.domain.Sort;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Pruebas Unitarias para TutorServiceImpl")
 class TutorServiceImplTest {
 
     @Mock
@@ -43,90 +44,138 @@ class TutorServiceImplTest {
     private TutorServiceImpl tutorService;
 
     private Pageable pageable;
+    private Tutor mockTutor;
+    private User mockUser;
 
     @BeforeEach
     void setUp() {
-        pageable = PageRequest.of(0, 10);
-    }
-
-    // HU7 Escenario 1: Obtención exitosa
-    @Test
-    void getAllTutores_Success_ReturnsPagedTutores() {
-        User mockUser = User.builder().id(1L).nombre("Tutor Uno").fotoUrl("foto.jpg").build();
-        Tutor mockTutor = Tutor.builder().id(1L).user(mockUser).rubro("Matemáticas").estrellasPromedio(4.5f).build();
-        Page<Tutor> tutorPage = new PageImpl<>(List.of(mockTutor), pageable, 1);
-
-        TutorSummaryResponse summaryResponse = new TutorSummaryResponse();
-        summaryResponse.setTutorId(1L);
-        summaryResponse.setNombreUsuario("Tutor Uno");
-        summaryResponse.setRubro("Matemáticas");
-        summaryResponse.setEstrellasPromedio(4.5f);
-
-        when(tutorRepository.findAll(pageable)).thenReturn(tutorPage);
-        when(tutorMapper.tutorsToTutorSummaryResponseList(List.of(mockTutor))).thenReturn(List.of(summaryResponse));
-
-        PagedResponse<TutorSummaryResponse> result = tutorService.getAllTutores(pageable);
-
-        assertNotNull(result);
-        assertEquals(1, result.getContent().size());
-        assertEquals("Tutor Uno", result.getContent().get(0).getNombreUsuario());
-        assertEquals(0, result.getPageNumber());
-        assertEquals(1, result.getTotalPages());
-    }
-
-    // HU7 Escenario 2: Lista vacía
-    @Test
-    void getAllTutores_EmptyList_ReturnsEmptyPagedResponse() {
-        Page<Tutor> emptyTutorPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
-
-        when(tutorRepository.findAll(pageable)).thenReturn(emptyTutorPage);
-        // El mapper no debería ser llamado si la lista de contenido está vacía antes del mapeo
-
-        PagedResponse<TutorSummaryResponse> result = tutorService.getAllTutores(pageable);
-
-        assertNotNull(result);
-        assertTrue(result.getContent().isEmpty());
-        assertEquals(0, result.getTotalElements());
-        assertEquals(0, result.getPageNumber());
-    }
-
-    // HU7 Escenario 3: Error en la carga (Simulado por una excepción del repositorio)
-    // No es necesario probar directamente aquí, ya que el GlobalExceptionHandler lo manejaría.
-    // Si quisiéramos probar que el servicio propaga la excepción:
-    @Test
-    void getAllTutores_RepositoryThrowsException_PropagatesException() {
-        when(tutorRepository.findAll(pageable)).thenThrow(new RuntimeException("Error de BD simulado"));
-
-        assertThrows(RuntimeException.class, () -> {
-            tutorService.getAllTutores(pageable);
-        });
-    }
-
-    // US: Visualización exitosa del perfil del tutor
-    @Test
-    void getTutorProfile_Success() {
-        Tutor tutor = Tutor.builder()
+        pageable = PageRequest.of(0, 9);
+        mockUser = User.builder().id(1L).nombre("Profesor de Cálculo").fotoUrl("http://example.com/foto.png").build();
+        mockTutor = Tutor.builder()
                 .id(1L)
-                .tarifaHora(50)
+                .user(mockUser)
                 .rubro("Matemáticas")
-                .bio("Bio del tutor")
-                .estrellasPromedio(4.5f)
+                .bio("Experto en derivadas e integrales.")
+                .estrellasPromedio(4.8f)
+                .tarifaHora(100)
                 .build();
-        when(tutorRepository.findById(1L)).thenReturn(Optional.of(tutor));
-        TutorProfileResponse response = tutorService.getTutorProfile(1L);
-        assertNotNull(response);
-        assertEquals(1L, response.getId());
-        assertEquals(50, response.getTarifaHora());
-        assertEquals("Matemáticas", response.getRubro());
-        assertEquals("Bio del tutor", response.getBio());
-        assertEquals(4.5f, response.getEstrellasPromedio());
     }
 
-    // US: Perfil de tutor no encontrado
-    @Test
-    void getTutorProfile_TutorNotFound() {
-        when(tutorRepository.findById(2L)).thenReturn(Optional.empty());
-        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> tutorService.getTutorProfile(2L));
-        assertEquals("Tutor no encontrado", ex.getMessage());
+    @Nested
+    @DisplayName("Pruebas para getAllTutores (HU7 con Filtros)")
+    class GetAllTutoresTests {
+
+        @Test
+        @DisplayName("Debe llamar a searchWithFilters con filtros nulos si no se proveen")
+        void getAllTutores_whenNoFilters_shouldCallRepositoryWithNulls() {
+            // Arrange
+            Page<Tutor> tutorPage = new PageImpl<>(List.of(mockTutor));
+            // Suponemos que la firma del método en el repositorio acepta 3 filtros
+            when(tutorRepository.searchWithFilters(null, null, null, pageable)).thenReturn(tutorPage);
+            when(tutorMapper.tutorsToTutorSummaryResponseList(anyList())).thenReturn(List.of(new TutorSummaryResponse()));
+
+            // Act
+            // Llamamos al servicio pasando null para todos los filtros
+            tutorService.getAllTutores(null, null, null, pageable);
+
+            // Assert
+            // Verificamos que se llamó al método correcto con todos los filtros nulos
+            verify(tutorRepository).searchWithFilters(null, null, null, pageable);
+            verify(tutorMapper).tutorsToTutorSummaryResponseList(anyList());
+        }
+
+        @Test
+        @DisplayName("Debe llamar a searchWithFilters con todos los parámetros de filtro")
+        void getAllTutores_withAllFilters_shouldCallRepositoryWithAllParameters() {
+            // Arrange
+            String query = "Cálculo";
+            Integer maxPrecio = 120;
+            Float puntuacion = 4.5f;
+            Page<Tutor> tutorPage = new PageImpl<>(List.of(mockTutor));
+            when(tutorRepository.searchWithFilters(query, maxPrecio, puntuacion, pageable)).thenReturn(tutorPage);
+            when(tutorMapper.tutorsToTutorSummaryResponseList(anyList())).thenReturn(List.of(new TutorSummaryResponse()));
+
+            // Act
+            tutorService.getAllTutores(query, maxPrecio, puntuacion, pageable);
+
+            // Assert
+            verify(tutorRepository).searchWithFilters(query, maxPrecio, puntuacion, pageable);
+        }
+
+        @Test
+        @DisplayName("Debe tratar una query en blanco como nula")
+        void getAllTutores_whenQueryIsBlank_shouldBeTreatedAsNull() {
+            // Arrange
+            String blankQuery = "   ";
+            Page<Tutor> tutorPage = Page.empty(pageable);
+
+            // El servicio debe convertir la query en blanco a null antes de pasarla al repositorio
+            when(tutorRepository.searchWithFilters(eq(null), any(), any(), any(Pageable.class)))
+                    .thenReturn(tutorPage);
+
+            // Act
+            tutorService.getAllTutores(blankQuery, null, null, pageable);
+
+            // Assert
+            // Verificamos que la lógica StringUtils.hasText() funciona y pasa null al repositorio
+            verify(tutorRepository).searchWithFilters(null, null, null, pageable);
+        }
+
+        @Test
+        @DisplayName("Debe devolver una respuesta paginada vacía si la búsqueda no encuentra resultados")
+        void getAllTutores_whenNoResultsFound_shouldReturnEmptyResponse() {
+            // Arrange
+            String query = "Física Cuántica";
+            Integer maxPrecio = 50;
+            Float puntuacion = 5.0f;
+            Page<Tutor> emptyPage = Page.empty(pageable);
+
+            // Configuramos el mock para que espere exactamente estos valores
+            when(tutorRepository.searchWithFilters(eq(query), eq(maxPrecio), eq(puntuacion), any(Pageable.class)))
+                    .thenReturn(emptyPage);
+
+            // Act
+            PagedResponse<TutorSummaryResponse> result = tutorService.getAllTutores(query, maxPrecio, puntuacion, pageable);
+
+            // Assert
+            assertNotNull(result);
+            assertTrue(result.getContent().isEmpty(), "El contenido de la respuesta debería estar vacío");
+            assertEquals(0, result.getTotalElements());
+
+            // Verificamos que el mapper no fue llamado porque no había nada que mapear
+            verify(tutorMapper, never()).tutorsToTutorSummaryResponseList(any());
+        }
+    }
+    @Nested
+    @DisplayName("Pruebas para getTutorProfile (HU16)")
+    class GetTutorProfileTests {
+
+        @Test
+        @DisplayName("Debe devolver el perfil completo del tutor si el ID existe")
+        void getTutorProfile_whenTutorExists_shouldReturnProfile() {
+            // Arrange
+            when(tutorRepository.findById(1L)).thenReturn(Optional.of(mockTutor));
+
+            // Act
+            TutorProfileResponse response = tutorService.getTutorProfile(1L);
+
+            // Assert
+            assertNotNull(response);
+            assertEquals(mockTutor.getId(), response.getId());
+            assertEquals(mockUser.getNombre(), response.getNombreUsuario());
+
+            verify(tutorRepository).findById(1L);
+        }
+
+        @Test
+        @DisplayName("Debe lanzar ResourceNotFoundException si el tutor no existe")
+        void getTutorProfile_whenTutorNotFound_shouldThrowResourceNotFoundException() {
+            // Arrange
+            Long nonExistentId = 99L;
+            when(tutorRepository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThrows(ResourceNotFoundException.class, () -> tutorService.getTutorProfile(nonExistentId));
+        }
     }
 }

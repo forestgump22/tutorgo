@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.Objects;
 
@@ -22,26 +23,28 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 150, nullable = false)
+    @Column(length = 150, nullable = false, columnDefinition = "TEXT")
     private String nombre;
 
     @Column(length = 150, nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password_hash", length = 150, nullable = false)
+    @Column(name = "password_hash", length = 150, nullable = false, columnDefinition = "TEXT")
     private String password;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "rol_id", nullable = false)
     private Role role;
 
-    @Column(name = "foto_url", length = 255)
+    @Column(name = "foto_url", length = 255, columnDefinition = "TEXT")
     private String fotoUrl;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
+    @JsonIgnore
     private Tutor tutorProfile;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
+    @JsonIgnore
     private Estudiante studentProfile;
 
     @Override

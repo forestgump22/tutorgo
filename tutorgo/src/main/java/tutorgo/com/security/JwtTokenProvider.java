@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import tutorgo.com.model.User;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -25,7 +27,6 @@ public class JwtTokenProvider {
     @Value("${jwt.expiration.ms}")
     private int jwtExpirationInMs;
 
-    // Generar token
     public String generateToken(Authentication authentication) {
         String username = authentication.getName(); // Email del usuario
         Date now = new Date();
@@ -35,9 +36,28 @@ public class JwtTokenProvider {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
-        return Jwts.builder()
+        Long userId = null;
+        String nombreUsuario = null;
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof CustomUserDetails) {
+            CustomUserDetails customUserDetails = (CustomUserDetails) principal;
+            userId = customUserDetails.getId();
+            nombreUsuario = customUserDetails.getNombreCompleto();
+        } else {
+            logger.warn("El principal no es una instancia de CustomUserDetails. No se añadirán userId y nombre al token. Principal es: {}", principal.getClass().getName());
+        }
+
+        JwtBuilder builder = Jwts.builder()
                 .setSubject(username)
-                .claim("roles", roles) // Añadir roles como claim
+                .claim("roles", roles);
+        if (userId != null) {
+            builder.claim("userId", userId);
+        }
+        if (nombreUsuario != null) {
+            builder.claim("nombre", nombreUsuario);
+        }
+        return builder
                 .setIssuedAt(new Date())
                 .setExpiration(expiryDate)
                 .signWith(key(), SignatureAlgorithm.HS512)

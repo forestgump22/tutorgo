@@ -1,3 +1,4 @@
+// src/main/java/tutorgo/com/dto/response/PagoResponse.java
 package tutorgo.com.dto.response;
 
 import lombok.Data;
@@ -16,7 +17,9 @@ public class PagoResponse {
     private BigDecimal comisionPlataforma;
     private MetodoPagoEnum metodoPago;
     private EstadoPagoEnum tipoEstado;
-    private Long sesionId; // Para vincular el pago a la sesión en la respuesta
+    private Long sesionId;
     private LocalDateTime fechaPago;
     private String descripcion;
+    private String nombreTutor;
+    private String nombreEstudiante;
 }
