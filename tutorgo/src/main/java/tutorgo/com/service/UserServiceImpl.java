@@ -1,6 +1,7 @@
 package tutorgo.com.service;
 
 import tutorgo.com.dto.request.UpdatePasswordRequest;
+import tutorgo.com.dto.request.UpdateUserProfileRequest;
 import tutorgo.com.dto.request.UserRegistrationRequest;
 import tutorgo.com.dto.response.UserResponse;
 import tutorgo.com.enums.RoleName;
@@ -103,7 +104,26 @@ public class UserServiceImpl implements UserService {
     }
 
 
-    // Implementación de HU6
+    @Override
+    @Transactional
+    public UserResponse updateUserProfile(String userEmail, UpdateUserProfileRequest request) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con email: " + userEmail));
+        user.setNombre(request.getNombre());
+
+        if (request.getFotoUrl() != null) { // Si el campo fotoUrl existe en el JSON request
+            if (StringUtils.hasText(request.getFotoUrl())) {
+                user.setFotoUrl(request.getFotoUrl());
+            } else {
+                user.setFotoUrl(null);
+            }
+        }
+
+        User updatedUser = userRepository.save(user);
+
+        return userMapper.userToUserResponse(updatedUser);
+    }
+
     @Override
     @Transactional
     public void deleteUserProfile(String userEmail) {

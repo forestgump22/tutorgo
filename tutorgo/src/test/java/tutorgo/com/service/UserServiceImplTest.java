@@ -7,8 +7,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.annotation.Transactional;
 import tutorgo.com.dto.request.UpdatePasswordRequest;
+import tutorgo.com.dto.request.UpdateUserProfileRequest;
 import tutorgo.com.dto.request.UserRegistrationRequest;
 import tutorgo.com.dto.response.StudentProfileResponse;
 import tutorgo.com.dto.response.TutorProfileResponse;
@@ -55,6 +55,8 @@ class UserServiceImplTest {
     private UserServiceImpl userService;
 
     private UserRegistrationRequest userRegistrationRequest;
+    private UpdatePasswordRequest updatePasswordRequest;
+    private UpdateUserProfileRequest updateUserProfileRequest;
     private Role studentRole;
     private Role tutorRole;
     private User user;
@@ -85,6 +87,16 @@ class UserServiceImplTest {
         // Simular perfiles para mapeo completo si es necesario
         Estudiante studentProfile = Estudiante.builder().id(1L).user(user).centroEstudio("Centro Estudio Existente").build();
         user.setStudentProfile(studentProfile);
+
+
+        updatePasswordRequest = new UpdatePasswordRequest();
+        updatePasswordRequest.setCurrentPassword("oldPassword123");
+        updatePasswordRequest.setNewPassword("newPassword456");
+        updatePasswordRequest.setConfirmNewPassword("newPassword456");
+
+        updateUserProfileRequest = new UpdateUserProfileRequest();
+        updateUserProfileRequest.setNombre("Nuevo Nombre Perfil");
+        updateUserProfileRequest.setFotoUrl("http://example.com/nueva_foto_perfil.jpg");
 
         // UserResponse genérico para algunos mocks
         userResponse = new UserResponse();
@@ -216,25 +228,151 @@ class UserServiceImplTest {
         verify(userRepository, times(1)).delete(any(User.class)); // Verifica que se intenta borrar el usuario
     }
 
-    @Override
-    @Transactional
-    public void updatePassword(String userEmail, UpdatePasswordRequest request) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con email: " + userEmail));
+    // --- Pruebas para updatePassword (HU3) ---
+    @Test
+    void updatePassword_Success() {
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(updatePasswordRequest.getCurrentPassword(), user.getPassword())).thenReturn(true);
+        when(passwordEncoder.matches(updatePasswordRequest.getNewPassword(), user.getPassword())).thenReturn(false);
+        when(passwordEncoder.encode(updatePasswordRequest.getNewPassword())).thenReturn("encodedNewPassword");
 
-        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new BadRequestException("La contraseña actual ingresada es incorrecta.");
-        }
-
-        if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
-            throw new BadRequestException("La nueva contraseña y su confirmación no coinciden.");
-        }
-
-        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
-            throw new BadRequestException("La nueva contraseña no puede ser igual a la contraseña actual.");
-        }
-
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
+        assertDoesNotThrow(() -> userService.updatePassword(user.getEmail(), updatePasswordRequest));
+        verify(userRepository).save(argThat(savedUser -> savedUser.getPassword().equals("encodedNewPassword")));
     }
+
+    @Test
+    void updatePassword_CurrentPasswordInvalid_ThrowsBadRequestException() {
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(updatePasswordRequest.getCurrentPassword(), user.getPassword())).thenReturn(false);
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> userService.updatePassword(user.getEmail(), updatePasswordRequest));
+        assertEquals("La contraseña actual ingresada es incorrecta.", exception.getMessage());
+    }
+
+    @Test
+    void updatePassword_NewPasswordsDoNotMatch_ThrowsBadRequestException() {
+        updatePasswordRequest.setConfirmNewPassword("nonMatchingPassword");
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(updatePasswordRequest.getCurrentPassword(), user.getPassword())).thenReturn(true);
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> userService.updatePassword(user.getEmail(), updatePasswordRequest));
+        assertEquals("La nueva contraseña y su confirmación no coinciden.", exception.getMessage());
+    }
+
+    @Test
+    void updatePassword_NewPasswordSameAsOld_ThrowsBadRequestException() {
+        updatePasswordRequest.setNewPassword(updatePasswordRequest.getCurrentPassword()); // Hacerla igual
+        updatePasswordRequest.setConfirmNewPassword(updatePasswordRequest.getCurrentPassword());
+
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(updatePasswordRequest.getCurrentPassword(), user.getPassword())).thenReturn(true);
+        // Simular que la nueva (que es igual a la actual) también matchea
+        when(passwordEncoder.matches(updatePasswordRequest.getNewPassword(), user.getPassword())).thenReturn(true);
+
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> {
+            userService.updatePassword(user.getEmail(), updatePasswordRequest);
+        });
+        assertEquals("La nueva contraseña no puede ser igual a la contraseña actual.", exception.getMessage());
+        verify(userRepository, never()).save(any());
+    }
+
+
+    // --- Pruebas para updateUserProfile (HU4) ---
+    @Test
+    void updateUserProfile_Success_UpdatesNameAndFotoUrl() {
+        UserResponse specificResponse = new UserResponse(); // Crear UserResponse específico
+        specificResponse.setId(user.getId());
+        specificResponse.setEmail(user.getEmail());
+        specificResponse.setNombre(updateUserProfileRequest.getNombre());
+        specificResponse.setFotoUrl(updateUserProfileRequest.getFotoUrl());
+        specificResponse.setRol(user.getRole().getNombre());
+        // Añadir perfiles si son necesarios para una respuesta completa del mapper
+        if (user.getStudentProfile() != null) {
+            StudentProfileResponse spr = new StudentProfileResponse();
+            spr.setId(user.getStudentProfile().getId());
+            spr.setCentroEstudio(user.getStudentProfile().getCentroEstudio());
+            specificResponse.setStudentProfile(spr);
+        }
+
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userMapper.userToUserResponse(any(User.class))).thenReturn(specificResponse);
+
+        UserResponse actualResponse = userService.updateUserProfile(user.getEmail(), updateUserProfileRequest);
+
+        assertNotNull(actualResponse);
+        assertEquals(updateUserProfileRequest.getNombre(), actualResponse.getNombre());
+        assertEquals(updateUserProfileRequest.getFotoUrl(), actualResponse.getFotoUrl());
+        verify(userRepository).save(argThat(savedUser ->
+                savedUser.getNombre().equals(updateUserProfileRequest.getNombre()) &&
+                        savedUser.getFotoUrl().equals(updateUserProfileRequest.getFotoUrl())
+        ));
+    }
+
+    @Test
+    void updateUserProfile_Success_UpdatesOnlyName_FotoUrlNullInRequest() {
+        updateUserProfileRequest.setFotoUrl(null); // fotoUrl no se envía
+        String originalFotoUrl = user.getFotoUrl(); // Guardar la foto original
+
+        UserResponse specificResponse = new UserResponse();
+        specificResponse.setId(user.getId());
+        specificResponse.setEmail(user.getEmail());
+        specificResponse.setNombre(updateUserProfileRequest.getNombre());
+        specificResponse.setFotoUrl(originalFotoUrl); // Esperamos que la foto original se mantenga
+        specificResponse.setRol(user.getRole().getNombre());
+        if (user.getStudentProfile() != null) {
+            StudentProfileResponse spr = new StudentProfileResponse();
+            spr.setId(user.getStudentProfile().getId());
+            spr.setCentroEstudio(user.getStudentProfile().getCentroEstudio());
+            specificResponse.setStudentProfile(spr);
+        }
+
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userMapper.userToUserResponse(any(User.class))).thenReturn(specificResponse);
+
+        userService.updateUserProfile(user.getEmail(), updateUserProfileRequest);
+
+        verify(userRepository).save(argThat(savedUser ->
+                savedUser.getNombre().equals(updateUserProfileRequest.getNombre()) &&
+                        (originalFotoUrl == null ? savedUser.getFotoUrl() == null : originalFotoUrl.equals(savedUser.getFotoUrl()))
+        ));
+    }
+
+    @Test
+    void updateUserProfile_Success_ClearsFotoUrl_IfFotoUrlEmptyInRequest() {
+        updateUserProfileRequest.setFotoUrl(""); // Se envía fotoUrl vacía
+
+        UserResponse specificResponse = new UserResponse();
+        specificResponse.setId(user.getId());
+        specificResponse.setEmail(user.getEmail());
+        specificResponse.setNombre(updateUserProfileRequest.getNombre());
+        specificResponse.setFotoUrl(null); // Esperamos que la foto se borre (sea null)
+        specificResponse.setRol(user.getRole().getNombre());
+        if (user.getStudentProfile() != null) {
+            StudentProfileResponse spr = new StudentProfileResponse();
+            spr.setId(user.getStudentProfile().getId());
+            spr.setCentroEstudio(user.getStudentProfile().getCentroEstudio());
+            specificResponse.setStudentProfile(spr);
+        }
+
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userMapper.userToUserResponse(any(User.class))).thenReturn(specificResponse);
+
+        userService.updateUserProfile(user.getEmail(), updateUserProfileRequest);
+
+        verify(userRepository).save(argThat(savedUser ->
+                savedUser.getNombre().equals(updateUserProfileRequest.getNombre()) &&
+                        savedUser.getFotoUrl() == null
+        ));
+    }
+
+    @Test
+    void updateUserProfile_UserNotFound_ThrowsResourceNotFoundException() {
+        when(userRepository.findByEmail("noexiste@example.com")).thenReturn(Optional.empty());
+        assertThrows(ResourceNotFoundException.class, () -> userService.updateUserProfile("noexiste@example.com", updateUserProfileRequest));
+    }
+
 }

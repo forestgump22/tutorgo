@@ -16,10 +16,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.data.domain.PageRequest; // Nuevos imports
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import tutorgo.com.dto.response.PagedResponse;
-import tutorgo.com.dto.response.TransaccionHistorialResponse;
-import tutorgo.com.service.PagoService; // Inyectar PagoService
-import tutorgo.com.utils.AppConstants;
 
 @RestController
 @RequestMapping("/users")
@@ -28,7 +24,6 @@ public class UserController {
 
     private final UserService userService;
     // private final MetodoPagoService metodoPagoService; // Si tenías la HU5 anterior
-    private final PagoService pagoService; // Inyectar PagoService para HU15
 
     // ... (endpoints existentes de updateUserPassword, updateUserProfile, deleteCurrentUserProfile) ...
     @PutMapping("/me/password")
@@ -39,6 +34,13 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse(true, "Contraseña actualizada con éxito."));
     }
 
+    @PutMapping("/me/profile")
+    public ResponseEntity<ApiResponse> updateUserProfile(@Valid @RequestBody UpdateUserProfileRequest updateUserProfileRequest) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = extractUserEmail(authentication);
+        UserResponse updatedUser = userService.updateUserProfile(userEmail, updateUserProfileRequest);
+        return ResponseEntity.ok(new ApiResponse(true, "Perfil actualizado correctamente.", updatedUser));
+    }
 
 
     @DeleteMapping("/me")

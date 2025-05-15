@@ -7,7 +7,10 @@ import tutorgo.com.dto.response.UserResponse;
 
 public interface UserService {
     UserResponse registerUser(UserRegistrationRequest registrationRequest);
+
     void updatePassword(String userEmail, UpdatePasswordRequest updatePasswordRequest);
+
+    UserResponse updateUserProfile(String userEmail, UpdateUserProfileRequest updateUserProfileRequest);
 
     void deleteUserProfile(String userEmail);
 }
