@@ -374,5 +374,5 @@ class UserServiceImplTest {
         when(userRepository.findByEmail("noexiste@example.com")).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class, () -> userService.updateUserProfile("noexiste@example.com", updateUserProfileRequest));
     }
-    
+
 }
