@@ -375,4 +375,45 @@ class UserServiceImplTest {
         assertThrows(ResourceNotFoundException.class, () -> userService.updateUserProfile("noexiste@example.com", updateUserProfileRequest));
     }
 
+    @Test
+    void deleteUserProfile_Success() {
+        String userEmail = "user.to.delete@example.com";
+        User userToDelete = User.builder().id(10L).email(userEmail).build();
+
+        when(userRepository.findByEmail(userEmail)).thenReturn(Optional.of(userToDelete));
+        doNothing().when(userRepository).delete(userToDelete);
+        assertDoesNotThrow(() -> userService.deleteUserProfile(userEmail));
+
+        verify(userRepository).findByEmail(userEmail);
+        verify(userRepository).delete(userToDelete);
+    }
+
+    @Test
+    void deleteUserProfile_UserNotFound_ThrowsResourceNotFoundException() {
+        String userEmail = "non.existent.user@example.com";
+        when(userRepository.findByEmail(userEmail)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
+            userService.deleteUserProfile(userEmail);
+        });
+        assertTrue(exception.getMessage().contains("Usuario no encontrado con email: " + userEmail));
+        verify(userRepository, never()).delete(any(User.class));
+    }
+
+    @Test
+    void deleteUserProfile_DeletionFails_ThrowsException() {
+        String userEmail = "user.fail.delete@example.com";
+        User userToFailDelete = User.builder().id(11L).email(userEmail).build();
+
+        when(userRepository.findByEmail(userEmail)).thenReturn(Optional.of(userToFailDelete));
+        doThrow(new RuntimeException("Error de base de datos simulado durante la eliminación"))
+                .when(userRepository).delete(userToFailDelete);
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            userService.deleteUserProfile(userEmail);
+        });
+        assertEquals("Error de base de datos simulado durante la eliminación", exception.getMessage());
+        verify(userRepository).delete(userToFailDelete); // Se intentó eliminar
+    }
+
 }
