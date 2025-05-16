@@ -29,6 +29,15 @@ public class Estudiante {
     @Column(name = "centro_estudio", length = 255, nullable = false)
     private String centroEstudio;
 
+    @OneToMany(mappedBy = "estudiante", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Sesion> sesionesComoEstudiante = new ArrayList<>();
+
+    @OneToMany(mappedBy = "estudiante", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Pago> pagosRealizados = new ArrayList<>();
+
+    @OneToMany(mappedBy = "estudiante", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<NotificacionEstudiante> notificacionesEstudiante = new ArrayList<>();
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
