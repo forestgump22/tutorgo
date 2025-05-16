@@ -65,4 +65,3 @@ public class Tutor {
         return Objects.hash(id);
     }
 }
-
