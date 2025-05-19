@@ -2,8 +2,6 @@ package tutorgo.com.mapper;
 
 import org.springframework.stereotype.Component;
 import tutorgo.com.dto.response.PagedResponse;
-import tutorgo.com.dto.response.ResenaResponse;
-import tutorgo.com.dto.response.TutorDetailResponse;
 import tutorgo.com.dto.response.TutorSummaryResponse;
 import tutorgo.com.model.Tutor;
 import tutorgo.com.model.User;

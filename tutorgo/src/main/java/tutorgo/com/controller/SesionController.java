@@ -36,17 +36,6 @@ public class SesionController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse(true, "Tu solicitud ha sido enviada. El tutor la confirmará pronto.", sesionResponse));
     }
-
-    // Endpoint para que el alumno vea "Mis solicitudes" (sus sesiones)
-    @GetMapping("/mis-solicitudes")
-    public ResponseEntity<List<SesionResponse>> getMisSolicitudes() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String alumnoEmail = ((UserDetails) authentication.getPrincipal()).getUsername();
-        List<SesionResponse> sesiones = sesionService.getSesionesByAlumnoEmail(alumnoEmail);
-        if (sesiones.isEmpty()) {
-            return ResponseEntity.noContent().build(); // O 200 OK con lista vacía
-        }
-        return ResponseEntity.ok(sesiones);
-    }
+    
 
 }
