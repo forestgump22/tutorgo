@@ -18,7 +18,6 @@ import tutorgo.com.exception.ResourceNotFoundException;
 import tutorgo.com.mapper.PagoMapper;
 import tutorgo.com.model.*;
 import tutorgo.com.repository.*;
-import tutorgo.com.dto.response.TransaccionHistorialResponse;
 import tutorgo.com.enums.RoleName;
 
 
