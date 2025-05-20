@@ -30,6 +30,8 @@ public class PagoMapper {
         response.setComisionPlataforma(pago.getComisionPlataforma());
         response.setMetodoPago(pago.getMetodoPago());
         response.setTipoEstado(pago.getTipoEstado());
+        response.setFechaPago(null); // Cambia esto si tienes el campo
+        response.setDescripcion("Pago por sesión o servicio");
 
         return response;
     }

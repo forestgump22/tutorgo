@@ -5,6 +5,7 @@ import tutorgo.com.enums.EstadoPagoEnum;
 import tutorgo.com.enums.MetodoPagoEnum;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 public class PagoResponse {
@@ -16,4 +17,6 @@ public class PagoResponse {
     private MetodoPagoEnum metodoPago;
     private EstadoPagoEnum tipoEstado;
     private Long sesionId; // Para vincular el pago a la sesión en la respuesta
+    private LocalDateTime fechaPago;
+    private String descripcion;
 }

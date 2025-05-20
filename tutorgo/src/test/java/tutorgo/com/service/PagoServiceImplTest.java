@@ -187,4 +187,46 @@ class PagoServiceImplTest {
         });
     }
 
+    // Escenario 1: Visualización exitosa del historial
+    @Test
+    void obtenerHistorialTransacciones_visualizacionExitosa() {
+        String email = "usuario@prueba.com";
+        User user = User.builder().id(1L).email(email).build();
+        Estudiante estudiante = Estudiante.builder().id(1L).user(user).build();
+        Pago pago = new Pago();
+        pago.setId(1L);
+        PagoResponse pagoResponse = new PagoResponse();
+        pagoResponse.setId(1L);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(estudianteRepository.findByUser(user)).thenReturn(Optional.of(estudiante));
+        when(pagoRepository.findByEstudianteIdWithDetails(eq(estudiante.getId()), any(Pageable.class)))
+            .thenReturn(new PageImpl<>(List.of(pago)));
+        when(pagoMapper.toPagoResponse(pago)).thenReturn(pagoResponse);
+        List<PagoResponse> result = pagoService.obtenerHistorialTransacciones(email);
+        assertEquals(1, result.size());
+        assertEquals(1L, result.get(0).getId());
+    }
+
+    // Escenario 2: Falla al cargar el historial
+    @Test
+    void obtenerHistorialTransacciones_errorServidor() {
+        String email = "usuario@prueba.com";
+        when(userRepository.findByEmail(email)).thenThrow(new RuntimeException("Error DB"));
+        assertThrows(RuntimeException.class, () -> pagoService.obtenerHistorialTransacciones(email));
+    }
+
+    // Escenario 3: Historial vacío
+    @Test
+    void obtenerHistorialTransacciones_historialVacio() {
+        String email = "usuario@prueba.com";
+        User user = User.builder().id(1L).email(email).build();
+        Estudiante estudiante = Estudiante.builder().id(1L).user(user).build();
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(estudianteRepository.findByUser(user)).thenReturn(Optional.of(estudiante));
+        when(pagoRepository.findByEstudianteIdWithDetails(eq(estudiante.getId()), any(Pageable.class)))
+            .thenReturn(new PageImpl<>(Collections.emptyList()));
+        List<PagoResponse> result = pagoService.obtenerHistorialTransacciones(email);
+        assertTrue(result.isEmpty());
+    }
+
 }

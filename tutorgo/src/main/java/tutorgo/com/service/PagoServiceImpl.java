@@ -145,4 +145,29 @@ public class PagoServiceImpl implements PagoService {
         }
     }
 
+    @Override
+    public List<PagoResponse> obtenerHistorialTransacciones(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + userEmail));
+        // Buscar si es estudiante
+        Estudiante estudiante = estudianteRepository.findByUser(user).orElse(null);
+        if (estudiante != null) {
+            // Buscar pagos como estudiante
+            return pagoRepository.findByEstudianteIdWithDetails(estudiante.getId(), Pageable.unpaged())
+                    .getContent().stream()
+                    .map(pagoMapper::toPagoResponse)
+                    .collect(Collectors.toList());
+        }
+        // Buscar si es tutor
+        Tutor tutor = tutorRepository.findByUser(user).orElse(null);
+        if (tutor != null) {
+            // Buscar pagos como tutor
+            return pagoRepository.findByTutorIdWithDetails(tutor.getId(), Pageable.unpaged())
+                    .getContent().stream()
+                    .map(pagoMapper::toPagoResponse)
+                    .collect(Collectors.toList());
+        }
+        throw new ResourceNotFoundException("No se encontró historial de transacciones para el usuario");
+    }
+
 }

@@ -14,7 +14,7 @@ import java.util.List;
 
 @Repository
 public interface SesionRepository extends JpaRepository<Sesion, Long> {
-
+    List<Sesion> findByHoraInicialBetween(LocalDateTime desde, LocalDateTime hasta);
     // Consulta para encontrar sesiones que se solapan para un tutor específico
     @Query("SELECT s FROM Sesion s WHERE s.tutor.id = :tutorId AND s.fecha = :fecha " +
             "AND s.horaInicial < :horaFinalReserva AND s.horaFinal > :horaInicialReserva " +
