@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tutorgo.com.dto.response.PagedResponse;// Nueva importación
+import tutorgo.com.dto.response.TutorProfileResponse;
 import tutorgo.com.dto.response.TutorSummaryResponse;
 import tutorgo.com.exception.ResourceNotFoundException;
 import tutorgo.com.mapper.TutorMapper;
@@ -34,6 +35,20 @@ public class TutorServiceImpl implements TutorService {
         return new PagedResponse<>(tutorSummaryResponses, tutoresPage.getNumber(),
                 tutoresPage.getSize(), tutoresPage.getTotalElements(),
                 tutoresPage.getTotalPages(), tutoresPage.isLast());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TutorProfileResponse getTutorProfile(Long tutorId) {
+        Tutor tutor = tutorRepository.findById(tutorId)
+                .orElseThrow(() -> new tutorgo.com.exception.ResourceNotFoundException("Tutor no encontrado"));
+        TutorProfileResponse response = new TutorProfileResponse();
+        response.setId(tutor.getId());
+        response.setTarifaHora(tutor.getTarifaHora());
+        response.setRubro(tutor.getRubro());
+        response.setBio(tutor.getBio());
+        response.setEstrellasPromedio(tutor.getEstrellasPromedio());
+        return response;
     }
 
 }

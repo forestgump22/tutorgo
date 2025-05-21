@@ -6,9 +6,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import tutorgo.com.dto.response.ApiResponse;
 import tutorgo.com.dto.response.PagedResponse;
 import tutorgo.com.dto.response.TutorSummaryResponse;
+import tutorgo.com.dto.response.TutorProfileResponse;
+import tutorgo.com.exception.ResourceNotFoundException;
 import tutorgo.com.service.TutorService;
 import tutorgo.com.utils.AppConstants;
 
@@ -38,6 +41,17 @@ public class TutorController {
             return ResponseEntity.ok(new ApiResponse(true, "Aún no hay tutores disponibles. Vuelve a intentarlo más tarde.", response));
         }
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ESTUDIANTE')")
+    public ResponseEntity<?> getTutorProfile(@PathVariable Long id) {
+        try {
+            TutorProfileResponse response = tutorService.getTutorProfile(id);
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException ex) {
+            return ResponseEntity.badRequest().body(new ApiResponse(false, "No se pudo cargar el perfil completo del tutor"));
+        }
     }
 
 }
