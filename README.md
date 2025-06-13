@@ -22,18 +22,19 @@ TutorGo es una plataforma web diseñada para conectar estudiantes con tutores es
 | US1        | Crear cuenta                 | Realizado    | Registro de usuarios (estudiantes/tutores) con correo y contraseña.         |
 | US2        | Iniciar sesión               | Realizado    | Autenticación segura con validación de credenciales.                        |
 | US3        | Actualizar contraseña        | Realizado    | Cambio de contraseña con validación de seguridad.                           |
-| US4        | Actualizar perfil            | En proceso   | Edición de nombre, foto y datos académicos/profesionales.                   |
+| US4        | Actualizar perfil            | Realizado    | Edición de nombre, foto y datos académicos/profesionales.                   |
 | US5        | Cerrar sesión                | Realizado    | Cierre de sesión manual y automático por inactividad.                       |
-| US6        | Eliminar perfil              | Pruebas      | Eliminación permanente de la cuenta con confirmación.                       |
-| US7        | Visualizar lista de tutores   | Realizado    | Búsqueda de tutores por especialidad, horario y calificaciones.             |
-| US8        | Reservar tutoría             | En proceso   | Agendamiento de sesiones con confirmación del tutor.                        |
-| US9        | Establecer disponibilidad    | Pruebas      | Configuración de horarios disponibles por parte de los tutores.             |
+| US6        | Eliminar perfil              | Realizado    | Eliminación permanente de la cuenta con confirmación.                       |
+| US7        | Visualizar lista de tutores  | Realizado    | Búsqueda de tutores por especialidad, horario y calificaciones.             |
+| US8        | Reservar tutoría             | Realizado    | Agendamiento de sesiones con confirmación del tutor.                        |
+| US9        | Establecer disponibilidad    | Realizado    | Configuración de horarios disponibles por parte de los tutores.             |
 | US10       | Confirmar pago               | Realizado    | Simulación de pago con validación de datos.                                 |
-| US11       | Adjuntar enlaces opcionales  | En proceso   | Compartir materiales (Zoom, Drive) desde el tutor al alumno.                |
+| US11       | Adjuntar enlaces opcionales  | Realizado    | Compartir materiales (Zoom, Drive) desde el tutor al alumno.                |
 | US12       | Ingresar a sesión programada | Realizado    | Acceso directo a la sesión mediante enlaces integrados.                     |
-| US13       | Calificación del tutor       | Pruebas      | Sistema de reseñas con estrellas y comentarios.                             |
-| US14       | Notificaciones               | En proceso   | Alertas para recordatorios de sesiones y actualizaciones.                   |
+| US13       | Calificación del tutor       | Realizado    | Sistema de reseñas con estrellas y comentarios.                             |
+| US14       | Notificaciones               | Realziado    | Alertas para recordatorios de sesiones y actualizaciones.                   |
 | US15       | Ver historial de pagos       | Realizado    | Consulta de transacciones realizadas por el usuario.                        |
+| US16       | Visualización del perfil     | Realizado    | Visualización del perfil del tutor por el alumno.                           |
 
 ---
 
