@@ -58,3 +58,4 @@ Sigue el progreso detallado en nuestro [Tablero de Trello](https://trello.com/in
 ## Diagrama de Clases UML
 ![image alt](https://github.com/forestgump22/tutorgo/blob/71d88e2248a607fd2d729539ac23f5de45ffaf42/Diagrama_UML.PNG?raw=true)
 ## Diagrama de Base de Datos
+![image alt](https://github.com/forestgump22/tutorgo/blob/7e69ab35d43c4eeea9d7a676a324195d90dbc951/Diagrama_BD.PNG)
