@@ -10,8 +10,13 @@ import tutorgo.com.exception.ResourceNotFoundException;
 import tutorgo.com.mapper.ResenaMapper;
 import tutorgo.com.model.Resena;
 import tutorgo.com.model.Sesion;
+import tutorgo.com.model.Tutor;
 import tutorgo.com.repository.ResenaRepository;
 import tutorgo.com.repository.SesionRepository;
+import tutorgo.com.repository.TutorRepository;
+
+import java.util.List; // ***** NUEVA IMPORTACIÓN *****
+
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +24,7 @@ public class ResenaServiceImpl implements ResenaService {
 
     private final ResenaRepository resenaRepository;
     private final SesionRepository sesionRepository;
+    private final TutorRepository tutorRepository;
     private final ResenaMapper resenaMapper;
 
     @Override
@@ -44,8 +50,8 @@ public class ResenaServiceImpl implements ResenaService {
             throw new BadRequestException("Esta sesión ya tiene una reseña registrada");
         }
 
-        // Validar que el estudiante autenticado sea el dueño de la sesión
         String emailSesionEstudiante = sesion.getEstudiante().getUser().getEmail();
+
         if (!emailSesionEstudiante.equalsIgnoreCase(emailEstudiante)) {
             throw new BadRequestException("No tienes permiso para calificar esta sesión.");
         }
@@ -55,6 +61,29 @@ public class ResenaServiceImpl implements ResenaService {
         resena.setSesion(sesion);
 
         Resena guardada = resenaRepository.save(resena);
+        actualizarPromedioEstrellasTutor(sesion.getTutor());
+
         return resenaMapper.toDTO(guardada);
+    }
+    private void actualizarPromedioEstrellasTutor(Tutor tutor) {
+        // Obtenemos todas las sesiones del tutor que tienen una reseña
+        List<Sesion> sesionesConResena = tutor.getSesionesComoTutor().stream()
+                .filter(s -> s.getResena() != null)
+                .toList();
+
+        if (sesionesConResena.isEmpty()) {
+            tutor.setEstrellasPromedio(0.0f); // Si no hay reseñas, el promedio es 0
+        } else {
+            // Calculamos el promedio de las calificaciones
+            double promedio = sesionesConResena.stream()
+                    .mapToInt(s -> s.getResena().getCalificacion())
+                    .average()
+                    .orElse(0.0);
+
+            tutor.setEstrellasPromedio((float) promedio);
+        }
+
+        // Guardamos el tutor con su nuevo promedio de estrellas
+        tutorRepository.save(tutor);
     }
 }

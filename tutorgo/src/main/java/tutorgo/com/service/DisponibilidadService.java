@@ -10,4 +10,5 @@ public interface DisponibilidadService {
     DisponibilidadResponse updateDisponibilidad(String tutorEmail, Long disponibilidadId, DisponibilidadRequest request);
     List<DisponibilidadResponse> getDisponibilidadesByTutor(String tutorEmail);
     void deleteDisponibilidad(String tutorEmail, Long disponibilidadId);
+    List<DisponibilidadResponse> getDisponibilidadesByTutorId(Long tutorId);
 }

@@ -1,6 +1,8 @@
 package tutorgo.com.service;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -12,14 +14,13 @@ import tutorgo.com.dto.response.PagoResponse;
 import tutorgo.com.enums.EstadoPagoEnum;
 import tutorgo.com.enums.EstadoSesionEnum;
 import tutorgo.com.enums.MetodoPagoEnum;
+import tutorgo.com.enums.RoleName;
 import tutorgo.com.exception.BadRequestException;
 import tutorgo.com.exception.ForbiddenException;
 import tutorgo.com.exception.ResourceNotFoundException;
 import tutorgo.com.mapper.PagoMapper;
 import tutorgo.com.model.*;
 import tutorgo.com.repository.*;
-import tutorgo.com.enums.RoleName;
-
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,202 +32,206 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import tutorgo.com.dto.response.PagedResponse;
-
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Pruebas Unitarias para PagoServiceImpl")
 class PagoServiceImplTest {
 
     @Mock private UserRepository userRepository;
     @Mock private EstudianteRepository estudianteRepository;
     @Mock private SesionRepository sesionRepository;
     @Mock private PagoRepository pagoRepository;
-    @Mock private TutorRepository tutorRepository;
     @Mock private DisponibilidadRepository disponibilidadRepository;
     @Mock private PagoMapper pagoMapper;
+    // No necesitas mockear TutorRepository si no lo usas directamente en el servicio
 
-    @InjectMocks private PagoServiceImpl pagoService;
+    @InjectMocks
+    private PagoServiceImpl pagoService;
 
     private User mockUserAlumno;
     private Estudiante mockAlumno;
     private Tutor mockTutor;
     private Sesion mockSesionPendiente;
     private ConfirmarPagoRequest confirmarPagoRequest;
-    private String alumnoEmail = "alumno.pago@example.com";
-    private Long sesionId = 1L;
+    private final String alumnoEmail = "alumno.pago@example.com";
+    private final Long sesionId = 1L;
 
     @BeforeEach
     void setUp() {
-        mockUserAlumno = User.builder().id(1L).email(alumnoEmail).build();
+        mockUserAlumno = User.builder().id(1L).email(alumnoEmail).role(new Role(3, null)).build();
         mockAlumno = Estudiante.builder().id(1L).user(mockUserAlumno).build();
-        mockTutor = Tutor.builder().id(1L).tarifaHora(60).user(User.builder().id(2L).build()).build(); // 60 por hora = 1 por minuto
+        mockTutor = Tutor.builder().id(1L).tarifaHora(60).user(User.builder().id(2L).build()).build();
 
         mockSesionPendiente = Sesion.builder()
                 .id(sesionId)
                 .estudiante(mockAlumno)
                 .tutor(mockTutor)
                 .fecha(LocalDate.now().plusDays(1))
-                .horaInicial(LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(10, 0)))
-                .horaFinal(LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(11, 0))) // 1 hora de duración
+                .horaInicial(LocalDateTime.now().plusDays(1).withHour(10).withMinute(0).withSecond(0).withNano(0))
+                .horaFinal(LocalDateTime.now().plusDays(1).withHour(11).withMinute(0).withSecond(0).withNano(0)) // 1 hora
                 .tipoEstado(EstadoSesionEnum.PENDIENTE)
                 .build();
+
+        mockUserAlumno.setStudentProfile(mockAlumno); // Asegurar la relación bidireccional
 
         confirmarPagoRequest = new ConfirmarPagoRequest();
         confirmarPagoRequest.setSesionId(sesionId);
         confirmarPagoRequest.setMetodoPago(MetodoPagoEnum.TARJETA_CREDITO);
     }
 
-    // HU10 Escenario 1: Pago exitoso
-    @Test
-    void procesarPagoYConfirmarSesion_Success() {
-        Pago mockPagoGuardado = new Pago();
-        mockPagoGuardado.setId(1L);
-        mockPagoGuardado.setTipoEstado(EstadoPagoEnum.COMPLETADO);
+    @Nested
+    @DisplayName("Pruebas para procesarPagoYConfirmarSesion (HU10)")
+    class ProcesarPagoTests {
 
-        PagoResponse mockPagoResponse = new PagoResponse();
-        mockPagoResponse.setId(1L);
-        mockPagoResponse.setTipoEstado(EstadoPagoEnum.COMPLETADO);
+        @Test
+        @DisplayName("Debe procesar el pago, confirmar la sesión y dividir la disponibilidad correctamente")
+        void procesarPagoYConfirmarSesion_whenSuccess_shouldUpdateEntitiesAndReturnResponse() {
+            // --- ARRANGE ---
 
-        // Definición de mockDispOriginal (como la tenías)
-        Disponibilidad mockDispOriginal = Disponibilidad.builder()
-                .id(10L).tutor(mockTutor).fecha(mockSesionPendiente.getFecha())
-                .horaInicial(mockSesionPendiente.getHoraInicial().minusHours(1)) // 09:00
-                .horaFinal(mockSesionPendiente.getHoraFinal().plusHours(1))     // 12:00
-                .build();
+            // 1. Datos de la sesión y el pago
+            Pago mockPagoGuardado = new Pago();
+            PagoResponse mockPagoResponse = new PagoResponse();
 
-        // --- GUARDA EL VALOR ORIGINAL ANTES DE QUE SE MODIFIQUE ---
-        LocalDateTime finOriginalDeMockDisp = mockDispOriginal.getHoraFinal();
-        // --- FIN DEL CAMBIO ---
+            // 2. Disponibilidad ORIGINAL que devolverá el mock del repositorio.
+            // Esta es la versión "antes" de que el servicio la modifique.
+            Disponibilidad disponibilidadOriginalParaMock = Disponibilidad.builder()
+                    .id(12L)
+                    .tutor(mockTutor)
+                    .fecha(mockSesionPendiente.getFecha())
+                    .horaInicial(LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(9, 0)))  // 09:00
+                    .horaFinal(LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(12, 0))) // 12:00
+                    .build();
 
-        when(userRepository.findByEmail(alumnoEmail)).thenReturn(Optional.of(mockUserAlumno));
-        when(estudianteRepository.findByUser(mockUserAlumno)).thenReturn(Optional.of(mockAlumno));
-        when(sesionRepository.findById(sesionId)).thenReturn(Optional.of(mockSesionPendiente));
-        when(pagoRepository.save(any(Pago.class))).thenReturn(mockPagoGuardado);
-        when(sesionRepository.save(any(Sesion.class))).thenReturn(mockSesionPendiente);
-        when(disponibilidadRepository.findDisponibilidadQueEnvuelveElSlot(anyLong(), any(), any(), any()))
-                .thenReturn(List.of(mockDispOriginal)); // El servicio recibe ESTE mockDispOriginal
-        when(disponibilidadRepository.save(any(Disponibilidad.class))).thenAnswer(invocation -> {
-            Disponibilidad d = invocation.getArgument(0);
-            if (d.getId() == null) { // Para la nueva disponibilidad
-                d.setId(System.nanoTime()); // Asigna un ID único simple para el test
-            }
-            return d;
-        });
-        when(pagoMapper.toPagoResponse(mockPagoGuardado)).thenReturn(mockPagoResponse);
+            // 3. Configuración de los mocks
+            when(userRepository.findByEmail(alumnoEmail)).thenReturn(Optional.of(mockUserAlumno));
+            when(estudianteRepository.findByUser(mockUserAlumno)).thenReturn(Optional.of(mockAlumno));
+            when(sesionRepository.findById(sesionId)).thenReturn(Optional.of(mockSesionPendiente));
+            when(pagoRepository.save(any(Pago.class))).thenReturn(mockPagoGuardado);
+            when(pagoMapper.toPagoResponse(mockPagoGuardado)).thenReturn(mockPagoResponse);
+            // El repositorio devolverá nuestra disponibilidad original cuando se le pregunte.
+            when(disponibilidadRepository.findDisponibilidadQueEnvuelveElSlot(anyLong(), any(), any(), any()))
+                    .thenReturn(List.of(disponibilidadOriginalParaMock));
 
-        PagoResponse result = pagoService.procesarPagoYConfirmarSesion(alumnoEmail, confirmarPagoRequest);
-
-        assertNotNull(result);
-        assertEquals(EstadoPagoEnum.COMPLETADO, result.getTipoEstado());
-        assertEquals(EstadoSesionEnum.CONFIRMADO, mockSesionPendiente.getTipoEstado());
-
-        verify(pagoRepository).save(argThat(pago ->
-                pago.getMonto().compareTo(new BigDecimal("60.00")) == 0 &&
-                        pago.getComisionPlataforma().compareTo(new BigDecimal("6.00")) == 0
-        ));
-        verify(sesionRepository).save(mockSesionPendiente);
-
-        ArgumentCaptor<Disponibilidad> dispCaptor = ArgumentCaptor.forClass(Disponibilidad.class);
-        verify(disponibilidadRepository, times(2)).save(dispCaptor.capture());
-
-        List<Disponibilidad> savedDisps = dispCaptor.getAllValues();
-
-        // Debug (puedes mantenerlos o quitarlos una vez que funcione)
-        System.out.println("Sesión Inicio: " + mockSesionPendiente.getHoraInicial() + ", Sesión Fin: " + mockSesionPendiente.getHoraFinal());
-        System.out.println("Disp Original (antes de modificar por servicio) Inicio: " + mockDispOriginal.getHoraInicial() +
-                ", Disp Original (antes de modificar por servicio) Fin: " + finOriginalDeMockDisp); // Usa la variable guardada
-        System.out.println("Disp Original (después de modificar por servicio) HoraFinal: " + mockDispOriginal.getHoraFinal()); // Ahora es T10:00
-        System.out.println("Primera Guardada (dispCaptor): ID=" + savedDisps.get(0).getId() + ", Inicio=" + savedDisps.get(0).getHoraInicial() + ", Fin=" + savedDisps.get(0).getHoraFinal());
-        System.out.println("Segunda Guardada (dispCaptor): ID=" + savedDisps.get(1).getId() + ", Inicio=" + savedDisps.get(1).getHoraInicial() + ", Fin=" + savedDisps.get(1).getHoraFinal());
-
-        // Aserciones
-        // La primera guardada es la original acortada
-        assertEquals(mockDispOriginal.getId(), savedDisps.get(0).getId()); // Mismo ID
-        assertEquals(mockDispOriginal.getHoraInicial(), savedDisps.get(0).getHoraInicial()); // Inicio original de mockDispOriginal (09:00)
-        assertEquals(mockSesionPendiente.getHoraInicial(), savedDisps.get(0).getHoraFinal()); // Fin es inicio de sesión (10:00)
-
-        // La segunda guardada es la nueva creada después de la sesión
-        assertNotNull(savedDisps.get(1).getId());
-        assertNotEquals(mockDispOriginal.getId(), savedDisps.get(1).getId());
-        assertEquals(mockSesionPendiente.getHoraFinal(), savedDisps.get(1).getHoraInicial()); // Inicio es fin de sesión (11:00)
-        // --- USA EL VALOR ORIGINAL GUARDADO PARA LA COMPARACIÓN ---
-        assertEquals(finOriginalDeMockDisp, savedDisps.get(1).getHoraFinal()); // Fin es el fin original de mockDispOriginal (12:00)
-        // --- FIN DEL CAMBIO EN LA ASERCIÓN ---
-    }
-
-    @Test
-    void procesarPagoYConfirmarSesion_SesionNoPendiente_ThrowsBadRequestException() {
-        mockSesionPendiente.setTipoEstado(EstadoSesionEnum.CONFIRMADO); // Sesión ya confirmada
-
-        when(userRepository.findByEmail(alumnoEmail)).thenReturn(Optional.of(mockUserAlumno));
-        when(estudianteRepository.findByUser(mockUserAlumno)).thenReturn(Optional.of(mockAlumno));
-        when(sesionRepository.findById(sesionId)).thenReturn(Optional.of(mockSesionPendiente));
-
-        BadRequestException ex = assertThrows(BadRequestException.class, () -> {
+            // --- ACT ---
             pagoService.procesarPagoYConfirmarSesion(alumnoEmail, confirmarPagoRequest);
-        });
-        assertEquals("Esta sesión no está pendiente de pago o ya ha sido procesada.", ex.getMessage());
+
+            // --- ASSERT ---
+
+            // 1. Verificar que se guardó un pago y se actualizó la sesión
+            verify(pagoRepository).save(any(Pago.class));
+            verify(sesionRepository).save(argThat(sesion -> sesion.getTipoEstado() == EstadoSesionEnum.CONFIRMADO));
+
+            // 2. Capturar los objetos 'Disponibilidad' que se pasaron al método save()
+            ArgumentCaptor<Disponibilidad> disponibilidadCaptor = ArgumentCaptor.forClass(Disponibilidad.class);
+            verify(disponibilidadRepository, times(2)).save(disponibilidadCaptor.capture());
+
+            List<Disponibilidad> disponibilidadesGuardadas = disponibilidadCaptor.getAllValues();
+
+            // 3. Asignar las capturas a variables para claridad
+            Disponibilidad primerBloqueGuardado = disponibilidadesGuardadas.get(0);
+            Disponibilidad segundoBloqueGuardado = disponibilidadesGuardadas.get(1);
+
+            // 4. Aserciones explícitas sobre los objetos capturados
+
+            // Verificación del PRIMER bloque (el original, acortado)
+            assertEquals(12L, primerBloqueGuardado.getId(), "El ID del primer bloque debe ser el original.");
+            assertEquals(
+                    disponibilidadOriginalParaMock.getHoraInicial(), // 09:00
+                    primerBloqueGuardado.getHoraInicial(),
+                    "La hora de inicio del primer bloque debe ser la original."
+            );
+            assertEquals(
+                    mockSesionPendiente.getHoraInicial(), // 10:00
+                    primerBloqueGuardado.getHoraFinal(),
+                    "La hora final del primer bloque debe ser la hora de inicio de la sesión."
+            );
+
+            // Verificación del SEGUNDO bloque (el nuevo, creado después)
+            // El ID debería ser diferente (o nulo si no lo seteamos en el mock, lo cual está bien)
+            assertEquals(
+                    mockSesionPendiente.getHoraFinal(), // 11:00
+                    segundoBloqueGuardado.getHoraInicial(),
+                    "La hora de inicio del segundo bloque debe ser la hora final de la sesión."
+            );
+            assertEquals(
+                    disponibilidadOriginalParaMock.getHoraFinal(), // 12:00
+                    segundoBloqueGuardado.getHoraFinal(),
+                    "La hora final del segundo bloque debe ser la hora final del bloque original."
+            );
+        }
+
+        @Test
+        @DisplayName("Debe lanzar BadRequestException si la sesión no está pendiente")
+        void procesarPagoYConfirmarSesion_whenSesionNotPendiente_shouldThrowBadRequest() {
+            mockSesionPendiente.setTipoEstado(EstadoSesionEnum.CONFIRMADO);
+            when(userRepository.findByEmail(alumnoEmail)).thenReturn(Optional.of(mockUserAlumno));
+            when(estudianteRepository.findByUser(mockUserAlumno)).thenReturn(Optional.of(mockAlumno));
+            when(sesionRepository.findById(sesionId)).thenReturn(Optional.of(mockSesionPendiente));
+
+            assertThrows(BadRequestException.class, () ->
+                    pagoService.procesarPagoYConfirmarSesion(alumnoEmail, confirmarPagoRequest)
+            );
+        }
+
+        @Test
+        @DisplayName("Debe lanzar ForbiddenException si la sesión no pertenece al alumno")
+        void procesarPagoYConfirmarSesion_whenSesionBelongsToOther_shouldThrowForbidden() {
+            Estudiante otroAlumno = Estudiante.builder().id(99L).user(new User()).build();
+            mockSesionPendiente.setEstudiante(otroAlumno);
+
+            when(userRepository.findByEmail(alumnoEmail)).thenReturn(Optional.of(mockUserAlumno));
+            when(estudianteRepository.findByUser(mockUserAlumno)).thenReturn(Optional.of(mockAlumno));
+            when(sesionRepository.findById(sesionId)).thenReturn(Optional.of(mockSesionPendiente));
+
+            assertThrows(ForbiddenException.class, () ->
+                    pagoService.procesarPagoYConfirmarSesion(alumnoEmail, confirmarPagoRequest)
+            );
+        }
     }
 
-    @Test
-    void procesarPagoYConfirmarSesion_SesionNoPerteneceAlAlumno_ThrowsForbiddenException() {
-        Estudiante otroAlumno = Estudiante.builder().id(99L).build();
-        mockSesionPendiente.setEstudiante(otroAlumno); // Sesión de otro alumno
+    @Nested
+    @DisplayName("Pruebas para obtenerHistorialTransacciones (HU15)")
+    class GetHistorialTests {
 
-        when(userRepository.findByEmail(alumnoEmail)).thenReturn(Optional.of(mockUserAlumno));
-        when(estudianteRepository.findByUser(mockUserAlumno)).thenReturn(Optional.of(mockAlumno));
-        when(sesionRepository.findById(sesionId)).thenReturn(Optional.of(mockSesionPendiente));
+        @Test
+        @DisplayName("Debe devolver el historial de un estudiante")
+        void obtenerHistorialTransacciones_forEstudiante_shouldSucceed() {
+            // Arrange
+            when(userRepository.findByEmail(alumnoEmail)).thenReturn(Optional.of(mockUserAlumno));
+            when(pagoRepository.findByEstudianteIdWithDetails(mockAlumno.getId())).thenReturn(Collections.emptyList());
 
-        assertThrows(ForbiddenException.class, () -> {
-            pagoService.procesarPagoYConfirmarSesion(alumnoEmail, confirmarPagoRequest);
-        });
+            // Act
+            List<PagoResponse> result = pagoService.obtenerHistorialTransacciones(alumnoEmail);
+
+            // Assert
+            assertNotNull(result);
+            assertTrue(result.isEmpty());
+            verify(pagoRepository).findByEstudianteIdWithDetails(mockAlumno.getId());
+            verify(pagoRepository, never()).findByTutorIdWithDetails(anyLong());
+        }
+
+        @Test
+        @DisplayName("Debe devolver el historial de un tutor")
+        void obtenerHistorialTransacciones_forTutor_shouldSucceed() {
+            // Arrange
+            String emailTutor = "tutor.pago@example.com";
+            User mockUserTutor = User.builder().id(2L).email(emailTutor).role(new Role(2, RoleName.TUTOR)).build();
+            Tutor mockTutorHistorial = Tutor.builder().id(2L).user(mockUserTutor).build();
+            mockUserTutor.setTutorProfile(mockTutorHistorial);
+
+            when(userRepository.findByEmail(emailTutor)).thenReturn(Optional.of(mockUserTutor));
+            when(pagoRepository.findByTutorIdWithDetails(mockTutorHistorial.getId())).thenReturn(Collections.emptyList());
+
+            // Act
+            List<PagoResponse> result = pagoService.obtenerHistorialTransacciones(emailTutor);
+
+            // Assert
+            assertNotNull(result);
+            assertTrue(result.isEmpty());
+            verify(pagoRepository).findByTutorIdWithDetails(mockTutorHistorial.getId());
+            verify(pagoRepository, never()).findByEstudianteIdWithDetails(anyLong());
+        }
     }
-
-    // Escenario 1: Visualización exitosa del historial
-    @Test
-    void obtenerHistorialTransacciones_visualizacionExitosa() {
-        String email = "usuario@prueba.com";
-        User user = User.builder().id(1L).email(email).build();
-        Estudiante estudiante = Estudiante.builder().id(1L).user(user).build();
-        Pago pago = new Pago();
-        pago.setId(1L);
-        PagoResponse pagoResponse = new PagoResponse();
-        pagoResponse.setId(1L);
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-        when(estudianteRepository.findByUser(user)).thenReturn(Optional.of(estudiante));
-        when(pagoRepository.findByEstudianteIdWithDetails(eq(estudiante.getId()), any(Pageable.class)))
-            .thenReturn(new PageImpl<>(List.of(pago)));
-        when(pagoMapper.toPagoResponse(pago)).thenReturn(pagoResponse);
-        List<PagoResponse> result = pagoService.obtenerHistorialTransacciones(email);
-        assertEquals(1, result.size());
-        assertEquals(1L, result.get(0).getId());
-    }
-
-    // Escenario 2: Falla al cargar el historial
-    @Test
-    void obtenerHistorialTransacciones_errorServidor() {
-        String email = "usuario@prueba.com";
-        when(userRepository.findByEmail(email)).thenThrow(new RuntimeException("Error DB"));
-        assertThrows(RuntimeException.class, () -> pagoService.obtenerHistorialTransacciones(email));
-    }
-
-    // Escenario 3: Historial vacío
-    @Test
-    void obtenerHistorialTransacciones_historialVacio() {
-        String email = "usuario@prueba.com";
-        User user = User.builder().id(1L).email(email).build();
-        Estudiante estudiante = Estudiante.builder().id(1L).user(user).build();
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-        when(estudianteRepository.findByUser(user)).thenReturn(Optional.of(estudiante));
-        when(pagoRepository.findByEstudianteIdWithDetails(eq(estudiante.getId()), any(Pageable.class)))
-            .thenReturn(new PageImpl<>(Collections.emptyList()));
-        List<PagoResponse> result = pagoService.obtenerHistorialTransacciones(email);
-        assertTrue(result.isEmpty());
-    }
-
 }

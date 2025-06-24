@@ -15,36 +15,35 @@ import tutorgo.com.exception.ResourceNotFoundException;
 import tutorgo.com.service.TutorService;
 import tutorgo.com.utils.AppConstants;
 
+import tutorgo.com.dto.response.DisponibilidadResponse;
+import tutorgo.com.service.DisponibilidadService;
+import java.util.List;
+
 @RestController
 @RequestMapping("/tutores")
 @RequiredArgsConstructor
 public class TutorController {
 
     private final TutorService tutorService;
+    private final DisponibilidadService disponibilidadService;
 
-    // Endpoint existente para HU7 (Lista de tutores)
     @GetMapping
     public ResponseEntity<?> getAllTutores(
-            @RequestParam(value = "page", defaultValue = AppConstants.DEFAULT_PAGE_NUMBER, required = false) int page,
-            @RequestParam(value = "size", defaultValue = AppConstants.DEFAULT_PAGE_SIZE, required = false) int size,
-            @RequestParam(value = "sortBy", defaultValue = AppConstants.DEFAULT_SORT_BY_TUTOR, required = false) String sortBy,
-            @RequestParam(value = "sortDir", defaultValue = AppConstants.DEFAULT_SORT_DIRECTION, required = false) String sortDir
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "maxPrecio", required = false) Integer maxPrecio,
+            @RequestParam(value = "puntuacion", required = false) Float puntuacion,
+            @RequestParam(value = "page", defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) int page,
+            @RequestParam(value = "size", defaultValue = "9") int size,
+            @RequestParam(value = "sortBy", defaultValue = AppConstants.DEFAULT_SORT_BY_TUTOR) String sortBy,
+            @RequestParam(value = "sortDir", defaultValue = AppConstants.DEFAULT_SORT_DIRECTION) String sortDir
     ) {
-        Sort.Direction direction = Sort.Direction.ASC;
-        if (sortDir.equalsIgnoreCase("desc")) {
-            direction = Sort.Direction.DESC;
-        }
+        Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-        PagedResponse<TutorSummaryResponse> response = tutorService.getAllTutores(pageable);
-
-        if (response.getContent() == null || response.getContent().isEmpty()) {
-            return ResponseEntity.ok(new ApiResponse(true, "Aún no hay tutores disponibles. Vuelve a intentarlo más tarde.", response));
-        }
+        PagedResponse<TutorSummaryResponse> response = tutorService.getAllTutores(query, maxPrecio, puntuacion, pageable);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ESTUDIANTE')")
     public ResponseEntity<?> getTutorProfile(@PathVariable Long id) {
         try {
             TutorProfileResponse response = tutorService.getTutorProfile(id);
@@ -52,6 +51,16 @@ public class TutorController {
         } catch (ResourceNotFoundException ex) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, "No se pudo cargar el perfil completo del tutor"));
         }
+    }
+
+    @GetMapping("/{tutorId}/disponibilidades")
+    @PreAuthorize("isAuthenticated()") // Solo usuarios logueados (estudiantes) pueden verla
+    public ResponseEntity<List<DisponibilidadResponse>> getDisponibilidadesDeTutor(@PathVariable Long tutorId) {
+        List<DisponibilidadResponse> disponibilidades = disponibilidadService.getDisponibilidadesByTutorId(tutorId);
+        if (disponibilidades.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(disponibilidades);
     }
 
 }

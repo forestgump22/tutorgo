@@ -84,7 +84,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void updatePassword(String userEmail, UpdatePasswordRequest request) {
-        User user = userRepository.findByEmail(userEmail)
+        User user = userRepository.findByEmailWithProfiles(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con email: " + userEmail));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {

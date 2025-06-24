@@ -6,6 +6,7 @@ import tutorgo.com.dto.response.UserResponse;
 import org.springframework.http.HttpStatus;
 import tutorgo.com.dto.request.UpdatePasswordRequest;
 import tutorgo.com.dto.response.ApiResponse;
+import tutorgo.com.model.User;
 import tutorgo.com.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +24,7 @@ import org.springframework.data.domain.Sort;
 public class UserController {
 
     private final UserService userService;
-    // private final MetodoPagoService metodoPagoService; // Si tenías la HU5 anterior
 
-    // ... (endpoints existentes de updateUserPassword, updateUserProfile, deleteCurrentUserProfile) ...
     @PutMapping("/me/password")
     public ResponseEntity<ApiResponse> updateUserPassword(@Valid @RequestBody UpdatePasswordRequest updatePasswordRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -41,7 +40,6 @@ public class UserController {
         UserResponse updatedUser = userService.updateUserProfile(userEmail, updateUserProfileRequest);
         return ResponseEntity.ok(new ApiResponse(true, "Perfil actualizado correctamente.", updatedUser));
     }
-
 
     @DeleteMapping("/me")
     public ResponseEntity<ApiResponse> deleteCurrentUserProfile() {

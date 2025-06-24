@@ -1,6 +1,8 @@
 package tutorgo.com.service;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,124 +30,142 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Pruebas Unitarias para SesionServiceImpl")
 class SesionServiceImplTest {
 
-    @Mock private UserRepository userRepository;
+    // Mocks para todas las dependencias del servicio
     @Mock private EstudianteRepository estudianteRepository;
     @Mock private TutorRepository tutorRepository;
     @Mock private SesionRepository sesionRepository;
     @Mock private DisponibilidadRepository disponibilidadRepository;
     @Mock private SesionMapper sesionMapper;
+    // No necesitamos UserRepository si buscamos por perfil directamente
 
-    @InjectMocks private SesionServiceImpl sesionService;
+    @InjectMocks
+    private SesionServiceImpl sesionService;
 
-    private User mockUserAlumno;
     private Estudiante mockAlumno;
     private Tutor mockTutor;
     private ReservaTutoriaRequest reservaRequest;
-    private String alumnoEmail = "alumno@example.com";
+    private final String alumnoEmail = "alumno@example.com";
 
     @BeforeEach
     void setUp() {
-        mockUserAlumno = User.builder().id(1L).email(alumnoEmail).build();
+        // Configuramos objetos de prueba realistas
+        User mockUserAlumno = User.builder().id(1L).email(alumnoEmail).build();
         mockAlumno = Estudiante.builder().id(1L).user(mockUserAlumno).build();
         User mockUserTutor = User.builder().id(2L).email("tutor@example.com").build();
         mockTutor = Tutor.builder().id(1L).user(mockUserTutor).build();
 
         reservaRequest = new ReservaTutoriaRequest();
         reservaRequest.setTutorId(mockTutor.getId());
-        reservaRequest.setFecha(LocalDate.now().plusDays(1));
-        reservaRequest.setHoraInicio(LocalTime.of(10, 0));
-        reservaRequest.setHoraFinal(LocalTime.of(11, 0));
+        reservaRequest.setFecha(LocalDate.now().plusDays(2)); // Usar 2 días para evitar conflictos de zona horaria
+        reservaRequest.setHoraInicio(LocalTime.of(15, 0));
+        reservaRequest.setHoraFinal(LocalTime.of(16, 0));
     }
 
-    // HU8 Escenario 1: Reserva exitosa
-    @Test
-    void reservarTutoria_Success() {
-        LocalDateTime inicio = LocalDateTime.of(reservaRequest.getFecha(), reservaRequest.getHoraInicio());
-        LocalDateTime fin = LocalDateTime.of(reservaRequest.getFecha(), reservaRequest.getHoraFinal());
+    @Nested
+    @DisplayName("Pruebas para reservarTutoria (HU8)")
+    class ReservarTutoriaTests {
 
-        Disponibilidad disp = new Disponibilidad(); // Simular disponibilidad
-        disp.setHoraInicial(inicio.minusHours(1)); // Tutor disponible desde antes
-        disp.setHoraFinal(fin.plusHours(1));     // Tutor disponible hasta después
+        @Test
+        @DisplayName("Debe crear una reserva exitosamente si todas las condiciones se cumplen")
+        void reservarTutoria_whenSuccessful_shouldCreateAndReturnSession() {
+            // Arrange
+            LocalDateTime inicioSesion = LocalDateTime.of(reservaRequest.getFecha(), reservaRequest.getHoraInicio());
+            LocalDateTime finSesion = LocalDateTime.of(reservaRequest.getFecha(), reservaRequest.getHoraFinal());
 
-        Sesion nuevaSesion = Sesion.builder()
-                .id(1L).estudiante(mockAlumno).tutor(mockTutor)
-                .fecha(reservaRequest.getFecha()).horaInicial(inicio).horaFinal(fin)
-                .tipoEstado(EstadoSesionEnum.PENDIENTE).build();
+            // Simulamos una disponibilidad que "envuelve" la sesión solicitada
+            Disponibilidad disp = new Disponibilidad();
 
-        SesionResponse mockResponse = new SesionResponse(); // Llenar con datos esperados
-        mockResponse.setId(1L);
-        mockResponse.setTipoEstado(EstadoSesionEnum.PENDIENTE);
+            // Simular lo que el servicio va a buscar
+            when(estudianteRepository.findByUserEmail(alumnoEmail)).thenReturn(Optional.of(mockAlumno));
+            when(tutorRepository.findById(reservaRequest.getTutorId())).thenReturn(Optional.of(mockTutor));
 
+            // Simular que el tutor tiene disponibilidad
+            when(disponibilidadRepository.findDisponibilidadQueEnvuelveElSlot(anyLong(), any(), any(), any())).thenReturn(List.of(disp));
 
-        when(userRepository.findByEmail(alumnoEmail)).thenReturn(Optional.of(mockUserAlumno));
-        when(estudianteRepository.findByUser(mockUserAlumno)).thenReturn(Optional.of(mockAlumno));
-        when(tutorRepository.findById(reservaRequest.getTutorId())).thenReturn(Optional.of(mockTutor));
-        when(disponibilidadRepository.findByTutorAndFecha(mockTutor, reservaRequest.getFecha())).thenReturn(List.of(disp));
-        when(sesionRepository.findSesionesSolapadasParaTutor(anyLong(), any(LocalDate.class), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(Collections.emptyList());
-        when(sesionRepository.save(any(Sesion.class))).thenReturn(nuevaSesion);
-        when(sesionMapper.toSesionResponse(nuevaSesion)).thenReturn(mockResponse);
+            // Simular que no hay sesiones solapadas para el tutor ni para el alumno
+            when(sesionRepository.findSesionesSolapadasParaTutor(anyLong(), any(), any(), any())).thenReturn(Collections.emptyList());
+            when(sesionRepository.findSesionesSolapadasParaEstudiante(anyLong(), any(), any(), any())).thenReturn(Collections.emptyList());
 
-        SesionResponse result = sesionService.reservarTutoria(alumnoEmail, reservaRequest);
+            // Simular el guardado y el mapeo
+            when(sesionRepository.save(any(Sesion.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(sesionMapper.toSesionResponse(any(Sesion.class))).thenReturn(new SesionResponse());
 
-        assertNotNull(result);
-        assertEquals(EstadoSesionEnum.PENDIENTE, result.getTipoEstado());
-        verify(sesionRepository).save(any(Sesion.class));
-    }
+            // Act
+            SesionResponse result = sesionService.reservarTutoria(alumnoEmail, reservaRequest);
 
-    // HU8 Escenario 2: Turno no disponible (fuera de disponibilidad del tutor)
-    @Test
-    void reservarTutoria_TutorNotAvailable_ThrowsBadRequestException() {
-        when(userRepository.findByEmail(alumnoEmail)).thenReturn(Optional.of(mockUserAlumno));
-        when(estudianteRepository.findByUser(mockUserAlumno)).thenReturn(Optional.of(mockAlumno));
-        when(tutorRepository.findById(reservaRequest.getTutorId())).thenReturn(Optional.of(mockTutor));
-        // Simular que no hay disponibilidades o que no cubren el horario
-        when(disponibilidadRepository.findByTutorAndFecha(mockTutor, reservaRequest.getFecha())).thenReturn(Collections.emptyList());
+            // Assert
+            assertNotNull(result);
 
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> {
-            sesionService.reservarTutoria(alumnoEmail, reservaRequest);
-        });
-        assertEquals("El tutor no está disponible en la fecha y hora seleccionadas.", exception.getMessage());
-    }
+            // Verificamos que se llamó al método save con una sesión en estado PENDIENTE
+            verify(sesionRepository).save(argThat(sesion ->
+                    sesion.getTipoEstado() == EstadoSesionEnum.PENDIENTE &&
+                            sesion.getTutor().getId().equals(mockTutor.getId()) &&
+                            sesion.getEstudiante().getId().equals(mockAlumno.getId())
+            ));
+        }
 
-    // HU8 Escenario 2: Turno ocupado (sesión solapada)
-    @Test
-    void reservarTutoria_SlotAlreadyBooked_ThrowsBadRequestException() {
-        LocalDateTime inicio = LocalDateTime.of(reservaRequest.getFecha(), reservaRequest.getHoraInicio());
-        LocalDateTime fin = LocalDateTime.of(reservaRequest.getFecha(), reservaRequest.getHoraFinal());
-        Disponibilidad disp = new Disponibilidad();
-        disp.setHoraInicial(inicio.minusHours(1));
-        disp.setHoraFinal(fin.plusHours(1));
+        @Test
+        @DisplayName("Debe lanzar BadRequestException si el horario no está dentro de la disponibilidad")
+        void reservarTutoria_whenTutorNotAvailable_shouldThrowBadRequest() {
+            // Arrange
+            when(estudianteRepository.findByUserEmail(alumnoEmail)).thenReturn(Optional.of(mockAlumno));
+            when(tutorRepository.findById(reservaRequest.getTutorId())).thenReturn(Optional.of(mockTutor));
+            // Simulamos que el método que busca disponibilidad devuelve una lista vacía
+            when(disponibilidadRepository.findDisponibilidadQueEnvuelveElSlot(anyLong(), any(), any(), any())).thenReturn(Collections.emptyList());
 
-        Sesion sesionExistente = new Sesion(); // Simula una sesión que se solapa
+            // Act & Assert
+            BadRequestException exception = assertThrows(BadRequestException.class, () -> {
+                sesionService.reservarTutoria(alumnoEmail, reservaRequest);
+            });
+            assertEquals("El horario solicitado no está dentro de la disponibilidad del tutor.", exception.getMessage());
+        }
 
-        when(userRepository.findByEmail(alumnoEmail)).thenReturn(Optional.of(mockUserAlumno));
-        when(estudianteRepository.findByUser(mockUserAlumno)).thenReturn(Optional.of(mockAlumno));
-        when(tutorRepository.findById(reservaRequest.getTutorId())).thenReturn(Optional.of(mockTutor));
-        when(disponibilidadRepository.findByTutorAndFecha(mockTutor, reservaRequest.getFecha())).thenReturn(List.of(disp));
-        when(sesionRepository.findSesionesSolapadasParaTutor(anyLong(), any(LocalDate.class), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(sesionExistente)); // Devuelve una sesión solapada
+        @Test
+        @DisplayName("Debe lanzar BadRequestException si el horario ya está ocupado por otra sesión")
+        void reservarTutoria_whenSlotIsBooked_shouldThrowBadRequest() {
+            // Arrange
+            when(estudianteRepository.findByUserEmail(alumnoEmail)).thenReturn(Optional.of(mockAlumno));
+            when(tutorRepository.findById(reservaRequest.getTutorId())).thenReturn(Optional.of(mockTutor));
+            when(disponibilidadRepository.findDisponibilidadQueEnvuelveElSlot(anyLong(), any(), any(), any())).thenReturn(List.of(new Disponibilidad()));
+            // Simulamos que ya existe una sesión en ese horario para el tutor
+            when(sesionRepository.findSesionesSolapadasParaTutor(anyLong(), any(), any(), any())).thenReturn(List.of(new Sesion()));
 
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> {
-            sesionService.reservarTutoria(alumnoEmail, reservaRequest);
-        });
-        assertEquals("El horario seleccionado ya no está disponible o está ocupado.", exception.getMessage());
-    }
+            // Act & Assert
+            BadRequestException exception = assertThrows(BadRequestException.class, () -> {
+                sesionService.reservarTutoria(alumnoEmail, reservaRequest);
+            });
+            assertEquals("El horario seleccionado ya no está disponible o está ocupado.", exception.getMessage());
+        }
 
-    @Test
-    void reservarTutoria_HoraFinAntesDeHoraInicio_ThrowsBadRequestException() {
-        reservaRequest.setHoraFinal(LocalTime.of(9, 0)); // Hora fin antes de hora inicio (10:00)
+        @Test
+        @DisplayName("Debe lanzar ResourceNotFoundException si el tutor no existe")
+        void reservarTutoria_whenTutorNotFound_shouldThrowResourceNotFound() {
+            // Arrange
+            when(estudianteRepository.findByUserEmail(alumnoEmail)).thenReturn(Optional.of(mockAlumno));
+            when(tutorRepository.findById(reservaRequest.getTutorId())).thenReturn(Optional.empty());
 
-        when(userRepository.findByEmail(alumnoEmail)).thenReturn(Optional.of(mockUserAlumno));
-        when(estudianteRepository.findByUser(mockUserAlumno)).thenReturn(Optional.of(mockAlumno));
-        when(tutorRepository.findById(reservaRequest.getTutorId())).thenReturn(Optional.of(mockTutor));
-        // No necesitamos mockear disponibilidad o sesiones solapadas si la validación de hora falla primero
+            // Act & Assert
+            assertThrows(ResourceNotFoundException.class, () -> {
+                sesionService.reservarTutoria(alumnoEmail, reservaRequest);
+            });
+        }
 
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> {
-            sesionService.reservarTutoria(alumnoEmail, reservaRequest);
-        });
-        assertEquals("La hora de finalización debe ser posterior a la hora de inicio.", exception.getMessage());
+        @Test
+        @DisplayName("Debe lanzar BadRequestException si la hora final es anterior a la inicial")
+        void reservarTutoria_whenEndTimeIsBeforeStartTime_shouldThrowBadRequest() {
+            // Arrange
+            reservaRequest.setHoraFinal(LocalTime.of(9, 0)); // Hora fin < hora inicio (10:00)
+            when(estudianteRepository.findByUserEmail(alumnoEmail)).thenReturn(Optional.of(mockAlumno));
+            when(tutorRepository.findById(reservaRequest.getTutorId())).thenReturn(Optional.of(mockTutor));
+
+            // Act & Assert
+            BadRequestException exception = assertThrows(BadRequestException.class, () -> {
+                sesionService.reservarTutoria(alumnoEmail, reservaRequest);
+            });
+            assertEquals("La hora de finalización debe ser posterior a la hora de inicio.", exception.getMessage());
+        }
     }
 }

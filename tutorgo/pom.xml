@@ -29,7 +29,9 @@
     <properties>
         <java.version>21</java.version>
         <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
-        <jjwt.version>0.11.5</jjwt.version> <!-- Para JWT más adelante -->
+        <jjwt.version>0.11.5</jjwt.version>
+        <maven.compiler.source>24</maven.compiler.source>
+        <maven.compiler.target>24</maven.compiler.target> <!-- Para JWT más adelante -->
     </properties>
     <dependencies>
         <dependency>

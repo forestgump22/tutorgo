@@ -33,7 +33,7 @@ public class PagoServiceImpl implements PagoService {
 
     private final UserRepository userRepository;
     private final EstudianteRepository estudianteRepository;
-    private final TutorRepository tutorRepository; // Necesario para obtener el perfil del tutor
+    private final TutorRepository tutorRepository;
     private final SesionRepository sesionRepository;
     private final PagoRepository pagoRepository;
     private final DisponibilidadRepository disponibilidadRepository;
@@ -147,27 +147,16 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public List<PagoResponse> obtenerHistorialTransacciones(String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + userEmail));
-        // Buscar si es estudiante
-        Estudiante estudiante = estudianteRepository.findByUser(user).orElse(null);
-        if (estudiante != null) {
-            // Buscar pagos como estudiante
-            return pagoRepository.findByEstudianteIdWithDetails(estudiante.getId(), Pageable.unpaged())
-                    .getContent().stream()
-                    .map(pagoMapper::toPagoResponse)
-                    .collect(Collectors.toList());
-        }
-        // Buscar si es tutor
-        Tutor tutor = tutorRepository.findByUser(user).orElse(null);
-        if (tutor != null) {
-            // Buscar pagos como tutor
-            return pagoRepository.findByTutorIdWithDetails(tutor.getId(), Pageable.unpaged())
-                    .getContent().stream()
-                    .map(pagoMapper::toPagoResponse)
-                    .collect(Collectors.toList());
-        }
-        throw new ResourceNotFoundException("No se encontró historial de transacciones para el usuario");
+        return userRepository.findByEmail(userEmail).map(u -> {
+            if (u.getStudentProfile() != null) {
+                return pagoRepository.findByEstudianteIdWithDetails(u.getStudentProfile().getId())
+                        .stream().map(pagoMapper::toPagoResponse).collect(Collectors.toList());
+            } else if (u.getTutorProfile() != null) {
+                return pagoRepository.findByTutorIdWithDetails(u.getTutorProfile().getId())
+                        .stream().map(pagoMapper::toPagoResponse).collect(Collectors.toList());
+            }
+            return List.<PagoResponse>of();
+        }).orElse(List.of());
     }
 
 }

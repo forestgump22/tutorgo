@@ -2,6 +2,7 @@ package tutorgo.com.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -30,12 +31,15 @@ public class Estudiante {
     private String centroEstudio;
 
     @OneToMany(mappedBy = "estudiante", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Sesion> sesionesComoEstudiante = new ArrayList<>();
 
     @OneToMany(mappedBy = "estudiante", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Pago> pagosRealizados = new ArrayList<>();
 
     @OneToMany(mappedBy = "estudiante", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<NotificacionEstudiante> notificacionesEstudiante = new ArrayList<>();
 
     @Override

@@ -20,6 +20,7 @@ import tutorgo.com.repository.SesionRepository; // Para verificar si hay sesione
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -163,5 +164,21 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
         }
 
         disponibilidadRepository.delete(disponibilidad);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DisponibilidadResponse> getDisponibilidadesByTutorId(Long tutorId) {
+        Tutor tutor = tutorRepository.findById(tutorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tutor no encontrado con ID: " + tutorId));
+
+        List<Disponibilidad> disponibilidades = disponibilidadRepository.findByTutorOrderByFechaAscHoraInicialAsc(tutor);
+
+        // Podrías filtrar aquí las disponibilidades pasadas si lo deseas
+         List<Disponibilidad> disponibilidadesFuturas = disponibilidades.stream()
+                .filter(d -> d.getHoraInicial().isAfter(LocalDateTime.now()))
+                .collect(Collectors.toList());
+
+        return disponibilidadMapper.toDisponibilidadResponseList(disponibilidades);
     }
 }

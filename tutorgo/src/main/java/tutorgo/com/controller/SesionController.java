@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -43,12 +44,26 @@ public class SesionController {
 
     // Endpoint para que el alumno vea "Mis solicitudes" (sus sesiones)
     @GetMapping("/mis-solicitudes")
+    @PreAuthorize("hasRole('ESTUDIANTE')")
     public ResponseEntity<List<SesionResponse>> getMisSolicitudes() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String alumnoEmail = ((UserDetails) authentication.getPrincipal()).getUsername();
         List<SesionResponse> sesiones = sesionService.getSesionesByAlumnoEmail(alumnoEmail);
         if (sesiones.isEmpty()) {
-            return ResponseEntity.noContent().build(); // O 200 OK con lista vacía
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(sesiones);
+    }
+
+    // ***** NUEVO ENDPOINT PARA QUE EL TUTOR VEA SUS CLASES *****
+    @GetMapping("/mis-clases")
+    @PreAuthorize("hasRole('TUTOR')")
+    public ResponseEntity<List<SesionResponse>> getMisClases() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String tutorEmail = ((UserDetails) authentication.getPrincipal()).getUsername();
+        List<SesionResponse> sesiones = sesionService.getSesionesByTutorEmail(tutorEmail);
+        if (sesiones.isEmpty()) {
+            return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(sesiones);
     }

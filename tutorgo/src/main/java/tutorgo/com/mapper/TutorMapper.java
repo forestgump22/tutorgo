@@ -28,6 +28,7 @@ public class TutorMapper {
         } else {
             response.setNombreUsuario("Nombre no disponible");
         }
+        response.setTarifaHora(tutor.getTarifaHora());
         return response;
     }
 

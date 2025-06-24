@@ -182,4 +182,65 @@ class DisponibilidadServiceImplTest {
             disponibilidadService.deleteDisponibilidad(tutorEmail, disponibilidadId);
         });
     }
+
+    @Test
+    void getDisponibilidadesByTutorId_whenTutorExists_shouldReturnDisponibilidades() {
+        // Arrange
+        Long tutorId = 1L;
+        Disponibilidad disp1 = new Disponibilidad(1L, mockTutor, LocalDate.now(), LocalDateTime.now(), LocalDateTime.now().plusHours(1));
+        List<Disponibilidad> disponibilidades = List.of(disp1);
+
+        DisponibilidadResponse resp1 = new DisponibilidadResponse();
+        resp1.setId(1L);
+
+        // Configuramos los mocks
+        when(tutorRepository.findById(tutorId)).thenReturn(Optional.of(mockTutor));
+        when(disponibilidadRepository.findByTutorOrderByFechaAscHoraInicialAsc(mockTutor)).thenReturn(disponibilidades);
+        when(disponibilidadMapper.toDisponibilidadResponseList(disponibilidades)).thenReturn(List.of(resp1));
+
+        // Act
+        List<DisponibilidadResponse> result = disponibilidadService.getDisponibilidadesByTutorId(tutorId);
+
+        // Assert
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+
+        // Verificamos que se llamaron a los métodos correctos
+        verify(tutorRepository).findById(tutorId);
+        verify(disponibilidadRepository).findByTutorOrderByFechaAscHoraInicialAsc(mockTutor);
+        verify(disponibilidadMapper).toDisponibilidadResponseList(disponibilidades);
+    }
+
+    @Test
+    void getDisponibilidadesByTutorId_whenTutorDoesNotExist_shouldThrowResourceNotFoundException() {
+        // Arrange
+        Long tutorId = 99L;
+        when(tutorRepository.findById(tutorId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(ResourceNotFoundException.class, () -> {
+            disponibilidadService.getDisponibilidadesByTutorId(tutorId);
+        });
+
+        // Verificamos que los otros repositorios no fueron llamados
+        verify(disponibilidadRepository, never()).findByTutorOrderByFechaAscHoraInicialAsc(any());
+        verify(disponibilidadMapper, never()).toDisponibilidadResponseList(any());
+    }
+
+    @Test
+    void getDisponibilidadesByTutorId_whenTutorHasNoDisponibilidades_shouldReturnEmptyList() {
+        // Arrange
+        Long tutorId = 1L;
+        when(tutorRepository.findById(tutorId)).thenReturn(Optional.of(mockTutor));
+        when(disponibilidadRepository.findByTutorOrderByFechaAscHoraInicialAsc(mockTutor)).thenReturn(Collections.emptyList());
+        when(disponibilidadMapper.toDisponibilidadResponseList(Collections.emptyList())).thenReturn(Collections.emptyList());
+
+        // Act
+        List<DisponibilidadResponse> result = disponibilidadService.getDisponibilidadesByTutorId(tutorId);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
 }

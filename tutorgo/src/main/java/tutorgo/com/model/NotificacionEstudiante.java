@@ -4,6 +4,10 @@ import tutorgo.com.enums.TipoNotificacionEstEnum;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -21,10 +25,20 @@ public class NotificacionEstudiante {
     @Column(length = 255, nullable = false)
     private String titulo;
 
+    // ***** CAMBIO IMPORTANTE AQUÍ *****
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "tipo_notificacion_est_enum")
+    @Column(name = "tipo", nullable = false, columnDefinition = "tipo_notificacion_est_enum")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private TipoNotificacionEstEnum tipo;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String texto;
+
+    @Column(name = "fecha_creacion", nullable = false)
+    private LocalDateTime fechaCreacion;
+
+    @PrePersist
+    protected void onCreate() {
+        this.fechaCreacion = LocalDateTime.now();
+    }
 }

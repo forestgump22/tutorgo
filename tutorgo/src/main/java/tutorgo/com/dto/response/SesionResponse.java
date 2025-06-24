@@ -6,6 +6,7 @@ import tutorgo.com.enums.EstadoSesionEnum;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class SesionResponse {
@@ -24,4 +25,7 @@ public class SesionResponse {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime horaFinal;
     private EstadoSesionEnum tipoEstado;
+
+    private List<EnlaceSesionResponseDTO> enlaces;
+    private boolean fueCalificada;
 }

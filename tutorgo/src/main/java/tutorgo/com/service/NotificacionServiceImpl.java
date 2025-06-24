@@ -1,36 +1,57 @@
+// src/main/java/tutorgo/com/service/NotificacionServiceImpl.java
 package tutorgo.com.service;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import tutorgo.com.enums.TipoNotificacionEstEnum;
-import tutorgo.com.enums.TipoNotificacionTutorEnum;
-import tutorgo.com.model.Estudiante;
-import tutorgo.com.model.NotificacionEstudiante;
-import tutorgo.com.model.NotificacionTutor;
-import tutorgo.com.model.Sesion;
-import tutorgo.com.model.Tutor;
-import tutorgo.com.repository.EstudianteRepository;
-import tutorgo.com.repository.TutorRepository;
-import tutorgo.com.service.NotificacionService;
+import tutorgo.com.dto.response.NotificacionResponse;
+import tutorgo.com.exception.ResourceNotFoundException;
+import tutorgo.com.model.*;
+import tutorgo.com.repository.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class NotificacionServiceImpl implements NotificacionService {
-    private final EstudianteRepository notificacionEstudianteRepository;
-    private final TutorRepository notificacionTutorRepository;
+
+    private final UserRepository userRepository;
+    private final NotificacionEstudianteRepository notificacionEstudianteRepository;
+    private final NotificacionTutorRepository notificacionTutorRepository;
 
     @Override
-    public void enviarRecordatorioEstudiante(Estudiante estudiante, Sesion sesion) {
-        NotificacionEstudiante notificacion = new NotificacionEstudiante();
-        notificacion.setEstudiante(estudiante);
-        notificacion.setTipo(TipoNotificacionEstEnum.RECORDATORIO);
-        notificacion.setTexto("Recordatorio: Tienes una sesión el " + sesion.getFecha() + " a las " + sesion.getHoraInicial().toLocalTime());
+    public List<NotificacionResponse> getMisNotificaciones(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        if ("ESTUDIANTE".equals(user.getRole().getNombre().name())) {
+            Estudiante estudiante = user.getStudentProfile();
+            if (estudiante == null) return List.of();
+
+            return notificacionEstudianteRepository.findByEstudianteOrderByFechaCreacionDesc(estudiante)
+                    .stream()
+                    .map(this::mapToResponse)
+                    .collect(Collectors.toList());
+
+        } else if ("TUTOR".equals(user.getRole().getNombre().name())) {
+            Tutor tutor = user.getTutorProfile();
+            if (tutor == null) return List.of();
+
+            return notificacionTutorRepository.findByTutorOrderByFechaCreacionDesc(tutor)
+                    .stream()
+                    .map(this::mapToResponse)
+                    .collect(Collectors.toList());
+        }
+
+        return List.of(); // Si es ADMIN o rol no reconocido, no devuelve nada.
     }
 
-    @Override
-    public void enviarRecordatorioTutor(Tutor tutor, Sesion sesion) {
-        NotificacionTutor notificacion = new NotificacionTutor();
-        notificacion.setTutor(tutor);
-        notificacion.setTipo(TipoNotificacionTutorEnum.RECORDATORIO);
-        notificacion.setTexto("Recordatorio: Tienes una sesión el " + sesion.getFecha() + " a las " + sesion.getHoraInicial().toLocalTime());
+    // Mappers privados para convertir entidades a DTOs comunes
+    private NotificacionResponse mapToResponse(NotificacionEstudiante n) {
+        return new NotificacionResponse(n.getId(), n.getTitulo(), n.getTexto(), n.getTipo().name(), n.getFechaCreacion());
+    }
+
+    private NotificacionResponse mapToResponse(NotificacionTutor n) {
+        return new NotificacionResponse(n.getId(), n.getTitulo(), n.getTexto(), n.getTipo().name(), n.getFechaCreacion());
     }
 }
