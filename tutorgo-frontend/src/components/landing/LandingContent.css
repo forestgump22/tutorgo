@@ -1,0 +1,291 @@
+/* Estilos para LandingPage.tsx */
+/* Estos estilos complementan a los de Tailwind que usan tu Header y Footer. */
+
+/* --- Variables y Estilos Globales para la Landing --- */
+:root {
+    --primary-color: #2563EB; /* Azul de tu Header */
+    --secondary-color: #fca311; /* Un color de acento vibrante */
+    --dark-color: #111827; /* Gris oscuro para texto */
+    --light-color: #ffffff;
+    --gray-color: #e5e5e5;
+    --body-bg: #f8f9fa;
+    --text-color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* --- Hero Section --- */
+.hero {
+    background: linear-gradient(rgba(17, 24, 39, 0.7), rgba(17, 24, 39, 0.7)), url('https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&q=80');
+    background-size: cover;
+    background-position: center;
+    color: var(--light-color);
+    text-align: center;
+    padding: 120px 20px;
+}
+
+.hero h1 {
+    font-size: 2.5rem; /* 40px */
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+@media (min-width: 768px) {
+    .hero h1 {
+        font-size: 3.75rem; /* 60px */
+    }
+}
+
+.hero p {
+    font-size: 1.125rem; /* 18px */
+    max-width: 600px;
+    margin: 0 auto 2rem auto;
+    color: #d1d5db; /* Gris claro */
+}
+
+/* --- Botones Genéricos (si no usas una librería de componentes) --- */
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: var(--light-color);
+    border-color: var(--primary-color);
+}
+.btn-primary:hover {
+    background-color: #1D4ED8; /* Azul más oscuro */
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: var(--dark-color);
+    border-color: var(--secondary-color);
+}
+.btn-secondary:hover {
+    background-color: #FBBF24; /* Amarillo más claro */
+}
+
+
+/* --- Secciones Generales --- */
+.section {
+    padding: 80px 0;
+}
+.section-title {
+    text-align: center;
+    font-size: 2.25rem; /* 36px */
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--dark-color);
+}
+.section-subtitle {
+    text-align: center;
+    font-size: 1.125rem; /* 18px */
+    color: #4B5563; /* Gris medio */
+    margin-bottom: 4rem;
+}
+
+/* --- Tutors Section --- */
+.tutor-search-bar {
+    display: flex;
+    gap: 1rem;
+    flex-direction: column;
+    margin-bottom: 3rem;
+    background: var(--light-color);
+    padding: 1rem;
+    border-radius: 0.75rem; /* 12px */
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+@media (min-width: 768px) {
+    .tutor-search-bar {
+        flex-direction: row;
+    }
+}
+
+
+.tutor-search-bar input,
+.tutor-search-bar select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #D1D5DB; /* Gris de Tailwind */
+    border-radius: 0.5rem;
+    font-size: 1rem;
+}
+
+.tutor-search-bar input:focus,
+.tutor-search-bar select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.tutor-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+.tutor-card {
+    background: var(--light-color);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.tutor-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.tutor-card-img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.tutor-card-body {
+    padding: 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.tutor-card .tutor-subject {
+    background-color: #FEF3C7; /* Amarillo claro */
+    color: #92400E; /* Marrón oscuro */
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem; /* 12px */
+    font-weight: 600;
+    display: inline-block;
+    margin-bottom: 1rem;
+    align-self: flex-start;
+}
+
+.tutor-card h3 {
+    font-size: 1.25rem; /* 20px */
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--dark-color);
+}
+
+.tutor-rating {
+    margin-bottom: 1rem;
+    color: #F59E0B; /* Ámbar */
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.tutor-rating span {
+    color: #4B5563;
+    font-size: 0.875rem;
+}
+.tutor-rating .empty {
+    color: #D1D5DB;
+}
+
+.tutor-card .price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-top: auto;
+}
+
+.tutor-card .price span {
+    font-size: 1rem;
+    font-weight: 400;
+    color: #4B5563;
+}
+
+#no-tutors-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: 1.125rem;
+    color: #6B7280;
+    padding: 2rem;
+}
+
+/* --- How It Works Section --- */
+#how-it-works {
+    background-color: var(--light-color);
+}
+
+.steps-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
+}
+@media (min-width: 768px) {
+    .steps-container {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+
+.step-card {
+    padding: 2rem;
+}
+
+.step-card .icon {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    background-color: #DBEAFE; /* Azul muy claro */
+    width: 70px;
+    height: 70px;
+    line-height: 70px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.step-card h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+/* --- CTA Section --- */
+.cta-section {
+    background-color: #1F2937; /* Gris más oscuro */
+    color: var(--light-color);
+    text-align: center;
+}
+
+.cta-section h2 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.cta-section p {
+    margin-bottom: 2rem;
+}
+
+.cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-direction: column;
+}
+@media (min-width: 640px) {
+    .cta-buttons {
+        flex-direction: row;
+    }
+}
