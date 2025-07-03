@@ -1,34 +1,51 @@
-// src/app/(auth)/register/page.tsx
 "use client";
 
-import { useState, FormEvent, ChangeEvent } from 'react';
+import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { registerUser } from '@/services/auth.service'; // Usando alias @/
-import { RegisterRequest, RoleName } from '@/models/auth.models'; // Usando alias @/
+import { registerUser } from '@/services/auth.service';
+import { RegisterRequest, RoleName } from '@/models/auth.models';
+import { CentroEstudio } from '@/models/centroEstudio';
+import { getAllCentrosEstudio } from '@/services/centroEstudio.service';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState<RegisterRequest>({
     nombre: '',
     email: '',
     password: '',
-    rol: 'ESTUDIANTE', // Rol por defecto
-    centroEstudio: '',
+    rol: 'ESTUDIANTE',
+    centroEstudioId: undefined,
     tarifaHora: undefined,
     rubro: '',
     bio: '',
     fotoUrl: '',
   });
+
+  const [centrosEstudio, setCentrosEstudio] = useState<CentroEstudio[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    const fetchCentros = async () => {
+      try {
+        const data = await getAllCentrosEstudio();
+        setCentrosEstudio(data);
+      } catch (err) {
+        setError("No se pudieron cargar los centros de estudio. Intenta recargar la página.");
+      }
+    };
+    fetchCentros();
+  }, []);
+
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'tarifaHora' ? (value === '' ? undefined : Number(value)) : value,
+      [name]: (name === 'tarifaHora' || name === 'centroEstudioId')
+              ? (value === '' ? undefined : Number(value))
+              : value,
     }));
   };
 
@@ -38,7 +55,6 @@ export default function RegisterPage() {
     setError(null);
     setSuccessMessage(null);
 
-    // HU1 Escenario 3: Espacios en blanco / Validación básica de campos obligatorios
     if (!formData.nombre.trim() || !formData.email.trim() || !formData.password.trim()) {
       setError("Debe llenar todos los campos obligatorios (nombre, email, contraseña, rol).");
       setLoading(false);
@@ -49,24 +65,21 @@ export default function RegisterPage() {
       setLoading(false);
       return;
     }
-    if (formData.rol === 'ESTUDIANTE' && !formData.centroEstudio?.trim()) {
-      setError("Para estudiantes, el centro de estudio es obligatorio.");
+    if (formData.rol === 'ESTUDIANTE' && !formData.centroEstudioId) {
+      setError("Para estudiantes, seleccionar un centro de estudio es obligatorio.");
       setLoading(false);
       return;
     }
-    // Podrías añadir más validaciones aquí (ej. longitud de contraseña, formato de email)
 
     try {
       const response = await registerUser(formData);
-      // HU1 Escenario 1: Registro exitoso
       setSuccessMessage(response.message || "¡Registro exitoso! Ahora puedes iniciar sesión.");
       
       setTimeout(() => {
         router.push('/login');
-      }, 2500); // Un poco más de tiempo para leer
+      }, 2500);
 
     } catch (err: any) {
-      // HU1 Escenario 2: Duplicación de correo (u otros errores del backend)
       setError(err.message || "Ocurrió un error durante el registro.");
     } finally {
       setLoading(false);
@@ -81,7 +94,7 @@ export default function RegisterPage() {
         </h2>
         
         {/* Contenedor de Mensajes */}
-        <div className="min-h-[4rem]"> {/* Espacio reservado para mensajes */}
+        <div className="min-h-[4rem]">
           {successMessage && (
             <div className="p-3 my-2 text-sm text-green-700 bg-green-100 rounded-lg animate-fadeIn" role="alert">
               {successMessage}
@@ -122,9 +135,22 @@ export default function RegisterPage() {
 
           {formData.rol === 'ESTUDIANTE' && (
             <div className="animate-fadeIn">
-              <label htmlFor="centroEstudio" className="block text-sm font-medium text-gray-700">Centro de Estudio *</label>
-              <input id="centroEstudio" name="centroEstudio" type="text" value={formData.centroEstudio} onChange={handleChange}
-                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+              <label htmlFor="centroEstudioId" className="block text-sm font-medium text-gray-700">Centro de Estudio *</label>
+              <select 
+                id="centroEstudioId" 
+                name="centroEstudioId" 
+                value={formData.centroEstudioId || ''} 
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                <option value="" disabled>Selecciona tu centro de estudio</option>
+                {centrosEstudio.map(centro => (
+                  <option key={centro.id} value={centro.id}>
+                    {centro.nombre}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 

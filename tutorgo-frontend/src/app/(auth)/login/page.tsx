@@ -1,12 +1,13 @@
 // src/app/(auth)/login/page.tsx
 "use client";
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setCookie } from 'cookies-next';
 import { useAuthStore } from '@/stores/auth.store';
-import { loginUser } from '@/services/auth.service';
-import { LoginRequest } from '@/models/auth.models';
+import { loginUser, loginWithGoogle } from '@/services/auth.service';
+import { LoginRequest, AuthResponse } from '@/models/auth.models';
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -26,31 +27,24 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
-  const handleSubmit = async (e: FormEvent) => {
+   const handleAuthSuccess = useCallback((response: AuthResponse) => {
+      setCookie('token', response.accessToken, {
+          path: '/',
+          maxAge: 60 * 60 * 24, // 1 día
+      });
+      setAuth(response.accessToken, response.user);
+      router.push('/dashboard');
+      router.refresh(); 
+  }, [setAuth, router]);
+
+   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
     const credentials: LoginRequest = { email, password };
-
     try {
       const response = await loginUser(credentials);
-      
-      // 1. Guarda el token en una cookie (mejor para Next.js)
-      setCookie('token', response.accessToken, {
-        path: '/',
-        maxAge: 60 * 60 * 24, // 1 día
-        // secure: process.env.NODE_ENV === 'production', // Habilitar en producción
-        // sameSite: 'strict',
-      });
-
-      // 2. Actualiza el estado global con la información del usuario
-      setAuth(response.accessToken, response.user);
-
-      // 3. Redirige al dashboard
-      router.push('/dashboard');
-      router.refresh(); // Refresca para que el middleware/layout re-evalúe
-
+      handleAuthSuccess(response);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -58,6 +52,26 @@ export default function LoginPage() {
     }
   };
 
+    const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+        setLoading(true);
+        setError(null);
+        try {
+            if (credentialResponse.credential) {
+                const response = await loginWithGoogle(credentialResponse.credential);
+                handleAuthSuccess(response);
+            } else {
+                throw new Error("No se recibió la credencial de Google.");
+            }
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+  };
+
+  const handleGoogleError = () => {
+      setError("El inicio de sesión con Google falló. Por favor, inténtelo de nuevo.");
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
@@ -66,10 +80,23 @@ export default function LoginPage() {
           Iniciar Sesión en TutorGo
         </h2>
 
-        {/* Mostrar mensajes de éxito o error */}
         <div className="min-h-[3rem]">
           {successMessage && <div className="p-3 text-sm text-green-700 bg-green-100 rounded-lg">{successMessage}</div>}
           {error && <div className="p-3 text-sm text-red-700 bg-red-100 rounded-lg">{error}</div>}
+        </div>
+
+        <div className="flex justify-center">
+            <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap
+            />
+        </div>
+
+        <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-gray-300"></div>
+            <span className="flex-shrink mx-4 text-gray-400 text-sm">O continúa con</span>
+            <div className="flex-grow border-t border-gray-300"></div>
         </div>
         
         <form className="space-y-6" onSubmit={handleSubmit}>

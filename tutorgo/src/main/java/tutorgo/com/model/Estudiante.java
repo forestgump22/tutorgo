@@ -27,8 +27,6 @@ public class Estudiante {
     @JoinColumn(name = "usuario_id", nullable = false, unique = true, referencedColumnName = "id")
     private User user;
 
-    @Column(name = "centro_estudio", length = 255, nullable = false)
-    private String centroEstudio;
 
     @OneToMany(mappedBy = "estudiante", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
@@ -41,6 +39,10 @@ public class Estudiante {
     @OneToMany(mappedBy = "estudiante", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<NotificacionEstudiante> notificacionesEstudiante = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "centro_estudio_id", nullable = false)
+    private CentroEstudio centroEstudio;
 
     @Override
     public boolean equals(Object o) {

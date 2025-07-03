@@ -30,12 +30,11 @@ export interface RegisterRequest {
   email: string;
   password: string;
   rol: RoleName;
-  // Campos opcionales según el rol
-  centroEstudio?: string; // Para ESTUDIANTE
-  tarifaHora?: number;    // Para TUTOR
-  rubro?: string;         // Para TUTOR
-  bio?: string;           // Para TUTOR
-  fotoUrl?: string;       // Opcional para todos
+  centroEstudioId?: number; 
+  tarifaHora?: number;
+  rubro?: string;
+  bio?: string;
+  fotoUrl?: string;
 }
 
 export interface UpdatePasswordRequest {

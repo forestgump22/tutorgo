@@ -36,3 +36,12 @@ export const getMe = async (): Promise<UserResponse> => {
     throw new Error(error.response?.data?.message || 'Error al obtener datos del usuario.');
   }
 };
+
+export const loginWithGoogle = async (googleToken: string): Promise<AuthResponse> => {
+  try {
+    const response = await api.post<AuthResponse>('/auth/google', { googleToken });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Error en el inicio de sesión con Google');
+  }
+};

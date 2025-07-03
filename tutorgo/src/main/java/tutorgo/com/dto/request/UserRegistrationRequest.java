@@ -26,7 +26,8 @@ public class UserRegistrationRequest {
     @NotNull(message = "El rol es obligatorio")
     private RoleName rol;
 
-    private String centroEstudio;
+
+    private Long centroEstudioId;
     private Integer tarifaHora;
     private String rubro;
     private String bio;

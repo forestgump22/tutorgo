@@ -52,7 +52,13 @@ public class UserMapper {
         }
         StudentProfileResponse dto = new StudentProfileResponse();
         dto.setId(estudiante.getId());
-        dto.setCentroEstudio(estudiante.getCentroEstudio());
+
+        if (estudiante.getCentroEstudio() != null) {
+            dto.setCentroEstudio(estudiante.getCentroEstudio().getNombre());
+        } else {
+            dto.setCentroEstudio(null);
+        }
+
         return dto;
     }
 }
