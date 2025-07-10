@@ -1,5 +1,6 @@
 package tutorgo.com.controller;
 
+import tutorgo.com.dto.request.GoogleLoginRequest;
 import tutorgo.com.dto.request.LoginRequest;
 import tutorgo.com.dto.request.UserRegistrationRequest;
 import tutorgo.com.dto.response.ApiResponse;
@@ -34,6 +35,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<JwtAuthenticationResponse> loginUser(@Valid @RequestBody LoginRequest loginRequest) {
         JwtAuthenticationResponse jwtResponse = authService.loginUser(loginRequest);
+        return ResponseEntity.ok(jwtResponse);
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<JwtAuthenticationResponse> loginWithGoogle(@Valid @RequestBody GoogleLoginRequest googleLoginRequest) {
+        JwtAuthenticationResponse jwtResponse = authService.loginWithGoogle(googleLoginRequest);
         return ResponseEntity.ok(jwtResponse);
     }
 }

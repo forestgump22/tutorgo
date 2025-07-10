@@ -1,22 +1,23 @@
-// src/app/(platform)/mis-tutorias/page.tsx
 "use client";
 
-import { useEffect, useState, useCallback, FormEvent } from 'react';
-import { SesionResponse } from '@/models/sesion.models';
-import { getMisTutorias, confirmarPago } from '@/services/sesion.service';
-import { useAuthStore } from '@/stores/auth.store';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCreditCard, faSpinner, faLink, faTimes, faPencilAlt, faStar } from '@fortawesome/free-solid-svg-icons';
+import { useEffect, useState, useCallback, type FormEvent } from "react";
+import type { SesionResponse } from "@/models/sesion.models";
+import { getMisTutorias, confirmarPago } from "@/services/sesion.service";
+import { useAuthStore } from "@/stores/auth.store";
+import type { ResenaRequest } from "@/models/resena.models";
+import { crearResena } from "@/services/resena.service";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CreditCard, Loader2, Link as LinkIcon, Edit3, Star, Calendar, Clock, User, CheckCircle, AlertCircle, Hourglass, BookUser } from "lucide-react";
 import Link from 'next/link';
-import { ResenaRequest } from '@/models/resena.models';
-import { crearResena } from '@/services/resena.service';
+import { Label } from "@/components/ui/label";
 
-interface CalificarModalProps {
-    sesionId: number;
-    onClose: () => void;
-    onResenaEnviada: (sesionId: number) => void;
-}
-const CalificarModal = ({ sesionId, onClose, onResenaEnviada }: CalificarModalProps) => {
+// --- MODAL PARA CALIFICAR (Sin cambios en lógica, solo usa componentes UI) ---
+const CalificarModal = ({ sesionId, onClose, onResenaEnviada }: { sesionId: number; onClose: () => void; onResenaEnviada: (sesionId: number) => void; }) => {
     const [calificacion, setCalificacion] = useState(0);
     const [hoverCalificacion, setHoverCalificacion] = useState(0);
     const [comentario, setComentario] = useState('');
@@ -31,9 +32,7 @@ const CalificarModal = ({ sesionId, onClose, onResenaEnviada }: CalificarModalPr
         }
         setIsSubmitting(true);
         setError(null);
-        
         const resenaData: ResenaRequest = { calificacion, comentario };
-
         try {
             await crearResena(sesionId, resenaData);
             onResenaEnviada(sesionId);
@@ -46,128 +45,65 @@ const CalificarModal = ({ sesionId, onClose, onResenaEnviada }: CalificarModalPr
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-            <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg relative animate-fadeIn">
-                <button type="button" onClick={onClose} className="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-800"><FontAwesomeIcon icon={faTimes} /></button>
-                <h3 className="text-xl font-bold mb-4">Calificar Tutoría</h3>
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Tu calificación *</label>
-                    <div className="flex items-center text-3xl text-gray-300">
-                        {[1, 2, 3, 4, 5].map(star => (
-                            <FontAwesomeIcon 
-                                key={star} icon={faStar}
-                                className={`cursor-pointer transition-colors ${(hoverCalificacion || calificacion) >= star ? 'text-yellow-400' : ''}`}
-                                onMouseEnter={() => setHoverCalificacion(star)}
-                                onMouseLeave={() => setHoverCalificacion(0)}
-                                onClick={() => setCalificacion(star)}
-                            />
-                        ))}
+        <Dialog open onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-yellow-500" />Calificar Tutoría</DialogTitle>
+                    <DialogDescription>Tu opinión ayuda a otros estudiantes.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+                    <div>
+                        <Label htmlFor="calificacion" className="block text-sm font-medium text-center text-card-foreground mb-3">Tu calificación *</Label>
+                        <div className="flex items-center justify-center gap-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button key={star} type="button" className={`p-1 transition-transform duration-150 ease-in-out hover:scale-125 ${(hoverCalificacion || calificacion) >= star ? "text-yellow-400" : "text-gray-300"}`} onMouseEnter={() => setHoverCalificacion(star)} onMouseLeave={() => setHoverCalificacion(0)} onClick={() => setCalificacion(star)}>
+                                    <Star className="h-8 w-8 fill-current" />
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                </div>
-                <div className="mb-6">
-                    <label htmlFor="comentario" className="block text-sm font-medium text-gray-700">Comentario (opcional)</label>
-                    <textarea 
-                        id="comentario" value={comentario} onChange={e => setComentario(e.target.value)}
-                        rows={4} maxLength={500}
-                        className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Comparte tu experiencia..."
-                    />
-                    <p className="text-xs text-right text-gray-500 mt-1">{comentario.length}/500</p>
-                </div>
-                {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-                <button type="submit" disabled={isSubmitting || calificacion === 0} className="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
-                    {isSubmitting ? 'Enviando...' : 'Enviar Calificación'}
-                </button>
-            </form>
-        </div>
+                    <div>
+                        <Label htmlFor="comentario" className="block text-sm font-medium text-card-foreground mb-2">Comentario (opcional)</Label>
+                        <Textarea id="comentario" value={comentario} onChange={e => setComentario(e.target.value)} rows={4} maxLength={500} placeholder="Comparte tu experiencia..." />
+                        <p className="text-xs text-muted-foreground mt-1 text-right">{comentario.length}/500</p>
+                    </div>
+                    {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
+                    <div className="flex gap-3 pt-2">
+                        <Button type="button" variant="outline" onClick={onClose} className="flex-1">Cancelar</Button>
+                        <Button type="submit" disabled={isSubmitting || calificacion === 0} className="flex-1">
+                            {isSubmitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enviando...</> : "Enviar Calificación"}
+                        </Button>
+                    </div>
+                </form>
+            </DialogContent>
+        </Dialog>
     );
 };
 
-interface SesionCardProps {
-    sesion: SesionResponse;
-    onPagar: (sesionId: number) => void;
-    onVerEnlaces: (sesion: SesionResponse) => void;
-    onCalificar: (sesionId: number) => void;
-    isPaying: boolean;
-}
-
-const SesionCard = ({ sesion, onPagar, onVerEnlaces, onCalificar, isPaying }: Omit<SesionCardProps, 'fueCalificada'>) => {
-    const formatDate = (dateTimeString: string) => new Date(dateTimeString).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-    const formatTime = (dateTimeString:string) => new Date(dateTimeString).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-
-    const ahora = new Date();
-    // La fecha del backend puede no tener la 'Z', así que la añadimos si es necesario para asegurar que se interprete como UTC
-    const horaFinalSesion = new Date(sesion.horaFinal.endsWith('Z') ? sesion.horaFinal : sesion.horaFinal + 'Z');
-    const sesionPasada = horaFinalSesion < ahora;
-    
-    return (
-        <div className={`p-4 rounded-lg shadow-md flex flex-col sm:flex-row justify-between items-center gap-4 
-            ${sesion.tipoEstado === 'PENDIENTE' ? 'bg-yellow-50 border-l-4 border-yellow-400' 
-            : sesionPasada  ? 'bg-blue-50 border-l-4 border-blue-400' 
-            : 'bg-green-50 border-l-4 border-green-500'}`}>
-            <div>
-                <p className="font-bold text-gray-800">Tutoría con {sesion.nombreTutor}</p>
-                <p className="text-sm text-gray-600">{formatDate(sesion.horaInicial)}</p>
-                <p className="text-sm text-gray-600">{formatTime(sesion.horaInicial)} - {formatTime(sesion.horaFinal)}</p>
-            </div>
-            <div className="w-full sm:w-auto flex-shrink-0">
-                {sesion.tipoEstado === 'PENDIENTE' && (
-                    <button onClick={() => onPagar(sesion.id)} disabled={isPaying} className="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:bg-gray-400">
-                        {isPaying ? <FontAwesomeIcon icon={faSpinner} spin /> : <FontAwesomeIcon icon={faCreditCard} />}
-                        {isPaying ? 'Procesando...' : 'Pagar y Confirmar'}
-                    </button>
+// --- MODAL PARA VER ENLACES (Sin cambios en lógica) ---
+const VerEnlacesModal = ({ sesion, onClose }: { sesion: SesionResponse; onClose: () => void }) => (
+    <Dialog open onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2"><LinkIcon className="h-5 w-5 text-blue-600" />Materiales para la sesión</DialogTitle>
+                <DialogDescription>Tutor: {sesion.nombreTutor}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 max-h-64 overflow-y-auto py-4">
+                {sesion.enlaces && sesion.enlaces.length > 0 ? (
+                    sesion.enlaces.map(link => (
+                        <a key={link.id} href={link.enlace} target="_blank" rel="noopener noreferrer" className="block p-3 bg-secondary hover:bg-muted rounded-lg text-secondary-foreground font-medium transition-colors">
+                            {link.nombre}
+                        </a>
+                    ))
+                ) : (
+                    <div className="text-center py-8 text-muted-foreground"><LinkIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" /><p>El tutor aún no ha compartido materiales.</p></div>
                 )}
-                {sesion.tipoEstado === 'CONFIRMADO' && !sesionPasada && (
-                    <button onClick={() => onVerEnlaces(sesion)} className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-                        <FontAwesomeIcon icon={faLink} />
-                        Ver Enlaces / Ingresar
-                    </button>
-                )}
-                {/* ***** LÓGICA SIMPLIFICADA AQUÍ ***** */}
-                {sesion.tipoEstado === 'CONFIRMADO' && sesionPasada && !sesion.fueCalificada && (
-                     <button onClick={() => onCalificar(sesion.id)} className="w-full bg-yellow-500 ...">
-                         <FontAwesomeIcon icon={faPencilAlt} /> Calificar Tutor
-                     </button>
-                )}
-                 {sesion.tipoEstado === 'CONFIRMADO' && sesionPasada && sesion.fueCalificada && (
-                     <span className="text-gray-500 font-semibold text-sm bg-gray-200 px-3 py-1 rounded-full">Calificada</span>
-                 )}
             </div>
-        </div>
-    );
-};
+        </DialogContent>
+    </Dialog>
+);
 
-
-const VerEnlacesModal = ({ sesion, onClose }: { sesion: SesionResponse, onClose: () => void }) => {
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg relative animate-fadeIn">
-                <button onClick={onClose} className="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-800">
-                    <FontAwesomeIcon icon={faTimes} />
-                </button>
-                <h3 className="text-xl font-bold mb-4">Materiales para la sesión con {sesion.nombreTutor}</h3>
-                
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {sesion.enlaces && sesion.enlaces.length > 0 ? (
-                        sesion.enlaces.map(link => (
-                            <a key={link.id} href={link.enlace} target="_blank" rel="noopener noreferrer" className="block bg-blue-50 p-3 rounded-md text-blue-700 font-semibold hover:bg-blue-100 transition-colors">
-                                {link.nombre}
-                            </a>
-                        ))
-                    ) : (
-                        <p className="text-gray-500 text-center py-4">
-                            {/* HU12 Escenario 3 */}
-                            El tutor aún no ha compartido el enlace o los materiales para esta sesión.
-                        </p>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-
-
+// --- COMPONENTE PRINCIPAL DE LA PÁGINA ---
 export default function MisTutoriasPage() {
     const user = useAuthStore((state) => state.user);
     const [sesiones, setSesiones] = useState<SesionResponse[]>([]);
@@ -177,109 +113,119 @@ export default function MisTutoriasPage() {
     const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
     const [sesionSeleccionada, setSesionSeleccionada] = useState<SesionResponse | null>(null);
     const [sesionParaCalificar, setSesionParaCalificar] = useState<number | null>(null);
-    const [sesionesCalificadas, setSesionesCalificadas] = useState<number[]>([]);
-
+    
     const fetchSesiones = useCallback(() => {
         setLoading(true);
         getMisTutorias()
             .then(data => {
-                const sortedData = data.sort((a, b) => new Date(b.horaInicial).getTime() - new Date(a.horaInicial).getTime());
+                const sortedData = data.sort((a, b) => new Date(a.horaInicial).getTime() - new Date(b.horaInicial).getTime());
                 setSesiones(sortedData);
             })
             .catch(err => setError(err.message))
             .finally(() => setLoading(false));
     }, []);
 
-    useEffect(() => {
-        fetchSesiones();
-    }, [fetchSesiones]);
-
+    useEffect(() => { fetchSesiones(); }, [fetchSesiones]);
 
     const handlePagar = async (sesionId: number) => {
-        const metodoPago = 'TARJETA_CREDITO';
-        
         setPaymentStatus(prev => ({ ...prev, [sesionId]: 'loading' }));
         setPaymentMessage(null);
-
         try {
-            const message = await confirmarPago({ sesionId, metodoPago });
+            const message = await confirmarPago({ sesionId, metodoPago: 'TARJETA_CREDITO' });
             setPaymentStatus(prev => ({ ...prev, [sesionId]: 'success' }));
             setPaymentMessage(message);
-
-            setSesiones(prevSesiones => 
-                prevSesiones.map(s => s.id === sesionId ? { ...s, tipoEstado: 'CONFIRMADO' } : s)
-            );
-
+            fetchSesiones(); // Volvemos a cargar todo para tener la data más fresca
         } catch (err: any) {
             setPaymentStatus(prev => ({ ...prev, [sesionId]: 'error' }));
             setPaymentMessage(err.message);
         }
     };
     
-    if (user && user.rol !== 'ESTUDIANTE') {
-        return (
-            <div className="text-center p-8">
-                <h1 className="text-2xl font-bold text-red-600">Acceso Denegado</h1>
-                <p className="text-gray-600 mt-2">Esta página es solo para estudiantes.</p>
-            </div>
-        );
-    }
-    
     const handleResenaEnviada = (sesionId: number) => {
-        // Añade el ID a la lista de calificadas para actualizar la UI
-        setSesionesCalificadas(prev => [...prev, sesionId]);
-        alert("¡Gracias por tu calificación!"); // Mensaje simple de éxito
+        setSesiones(prev => prev.map(s => s.id === sesionId ? { ...s, fueCalificada: true } : s));
+        setPaymentMessage("¡Gracias por tu calificación!");
     };
 
+    if (user?.rol !== 'ESTUDIANTE' && !loading) {
+        return <div className="text-center p-8"><h1 className="text-2xl font-bold text-red-600">Acceso Denegado</h1><p className="text-muted-foreground mt-2">Esta página es solo para estudiantes.</p></div>;
+    }
+    
+    const sesionesPendientes = sesiones.filter(s => s.tipoEstado === 'PENDIENTE');
+    const sesionesActivas = sesiones.filter(s => s.tipoEstado === 'CONFIRMADO' && new Date(s.horaFinal) > new Date());
+    const historialSesiones = sesiones.filter(s => s.tipoEstado === 'CONFIRMADO' && new Date(s.horaFinal) <= new Date());
 
     return (
-        <div className="max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold text-gray-800 mb-6">Mis Tutorías</h1>
-            
-            <div className="min-h-[4rem]">
-                {paymentMessage && (
-                    <div className={`p-4 mb-4 text-sm rounded-lg ${Object.values(paymentStatus).some(s => s === 'error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                        {paymentMessage}
-                    </div>
-                )}
+        <div className="max-w-5xl mx-auto space-y-8">
+            <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis Tutorías</h1>
+                <p className="text-muted-foreground">Gestiona tus sesiones pendientes, próximas y pasadas.</p>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                {loading && <p className="text-center text-gray-500 py-8">Cargando tus tutorías...</p>}
-                {!loading && error && <p className="text-center text-red-600 py-8">{error}</p>}
-                {!loading && !error && sesiones.length === 0 && (
-                    <p className="text-center text-gray-500 p-8">Aún no has reservado ninguna tutoría.</p>
-                )}
+            {paymentMessage && (
+                <Alert className={`mb-6 ${Object.values(paymentStatus).some(s => s === 'error') ? 'variant="destructive"' : 'border-green-200 bg-green-50 text-green-700'}`}>
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>{paymentMessage}</AlertDescription>
+                </Alert>
+            )}
 
-                <div className="space-y-4">
-                    {sesiones.map(sesion => (
-                        <SesionCard 
-                            key={sesion.id} 
-                            sesion={sesion} 
-                            onPagar={handlePagar}
-                            onVerEnlaces={setSesionSeleccionada}
-                            onCalificar={setSesionParaCalificar}
-                            isPaying={paymentStatus[sesion.id] === 'loading'}
-                        />
-                    ))}
+            {loading ? (
+                 <div className="text-center py-12 flex items-center justify-center text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" />Cargando tus tutorías...</div>
+            ) : error ? (
+                <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>
+            ) : (
+                <div className="space-y-10">
+                    {/* SECCIÓN PENDIENTES */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Hourglass className="text-yellow-500" />
+                                Pendientes de Pago ({sesionesPendientes.length})
+                            </CardTitle>
+                            <CardDescription>Confirma estas sesiones para asegurar tu cupo con el tutor.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {sesionesPendientes.length > 0 ? (
+                                sesionesPendientes.map(sesion => <SesionCard key={sesion.id} sesion={sesion} onPagar={handlePagar} onVerEnlaces={setSesionSeleccionada} onCalificar={setSesionParaCalificar} isPaying={paymentStatus[sesion.id] === 'loading'} />)
+                            ) : (<p className="text-sm text-muted-foreground py-4 text-center">No tienes sesiones pendientes.</p>)}
+                        </CardContent>
+                    </Card>
+
+                    {/* SECCIÓN PRÓXIMAS */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Calendar className="text-green-500" />
+                                Próximas Tutorías ({sesionesActivas.length})
+                            </CardTitle>
+                             <CardDescription>¡Prepárate para tu próxima sesión de aprendizaje!</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {sesionesActivas.length > 0 ? (
+                                sesionesActivas.map(sesion => <SesionCard key={sesion.id} sesion={sesion} onPagar={handlePagar} onVerEnlaces={setSesionSeleccionada} onCalificar={setSesionParaCalificar} isPaying={paymentStatus[sesion.id] === 'loading'} />)
+                            ) : (<p className="text-sm text-muted-foreground py-4 text-center">No tienes tutorías confirmadas próximamente.</p>)}
+                        </CardContent>
+                    </Card>
+
+                     {/* SECCIÓN HISTORIAL */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <History className="text-blue-500" />
+                                Historial de Tutorías ({historialSesiones.length})
+                            </CardTitle>
+                            <CardDescription>Revisa tus sesiones pasadas y califica la experiencia.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                             {historialSesiones.length > 0 ? (
+                                historialSesiones.map(sesion => <SesionCard key={sesion.id} sesion={sesion} onPagar={handlePagar} onVerEnlaces={setSesionSeleccionada} onCalificar={setSesionParaCalificar} isPaying={paymentStatus[sesion.id] === 'loading'} />)
+                            ) : (<p className="text-sm text-muted-foreground py-4 text-center">Aún no has completado ninguna tutoría.</p>)}
+                        </CardContent>
+                    </Card>
                 </div>
-            </div>
+            )}
             
-            {sesionParaCalificar && (
-                <CalificarModal 
-                    sesionId={sesionParaCalificar}
-                    onClose={() => setSesionParaCalificar(null)}
-                    onResenaEnviada={handleResenaEnviada}
-                />
-            )}
-
-            {/* Modal para Ver Enlaces (¡Esta parte podría faltar!) */}
-            {sesionSeleccionada && (
-                <VerEnlacesModal 
-                    sesion={sesionSeleccionada}
-                    onClose={() => setSesionSeleccionada(null)}
-                />
-            )}
+            {sesionParaCalificar && <CalificarModal sesionId={sesionParaCalificar} onClose={() => setSesionParaCalificar(null)} onResenaEnviada={handleResenaEnviada} />}
+            {sesionSeleccionada && <VerEnlacesModal sesion={sesionSeleccionada} onClose={() => setSesionSeleccionada(null)} />}
         </div>
     );
 }

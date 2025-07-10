@@ -1,18 +1,8 @@
-// tsconfig.json
 {
   "compilerOptions": {
-    // --- AÑADE ESTAS DOS LÍNEAS ---
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [ "src/*" ]
-    },
-    // --- FIN DE LAS LÍNEAS A AÑADIR ---
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
+    "target": "ES6",
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
@@ -28,15 +18,10 @@
         "name": "next"
       }
     ],
-    "target": "ES2017"
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

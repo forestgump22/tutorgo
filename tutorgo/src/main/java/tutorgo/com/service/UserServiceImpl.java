@@ -22,6 +22,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import tutorgo.com.model.CentroEstudio;
+import tutorgo.com.repository.CentroEstudioRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +32,7 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final TutorRepository tutorRepository;
     private final EstudianteRepository estudianteRepository;
+    private final CentroEstudioRepository centroEstudioRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
 
@@ -66,14 +69,18 @@ public class UserServiceImpl implements UserService {
             tutorProfile.setEstrellasPromedio(0.0f);
             Tutor savedTutorProfile = tutorRepository.save(tutorProfile);
             savedUser.setTutorProfile(savedTutorProfile);
-        } else if (userRole.getNombre() == RoleName.ESTUDIANTE) {
-            if (!StringUtils.hasText(request.getCentroEstudio())) {
+        }
+        else if (userRole.getNombre() == RoleName.ESTUDIANTE) {
+            if (request.getCentroEstudioId() == null) {
                 userRepository.delete(savedUser);
                 throw new BadRequestException("Para el rol ESTUDIANTE, el centro de estudio es obligatorio.");
             }
+            CentroEstudio centroEstudio = centroEstudioRepository.findById(request.getCentroEstudioId())
+                    .orElseThrow(() -> new BadRequestException("El centro de estudio seleccionado no es válido."));
+
             Estudiante studentProfile = new Estudiante();
             studentProfile.setUser(savedUser);
-            studentProfile.setCentroEstudio(request.getCentroEstudio());
+            studentProfile.setCentroEstudio(centroEstudio); // Asignamos la entidad completa
             Estudiante savedStudentProfile = estudianteRepository.save(studentProfile);
             savedUser.setStudentProfile(savedStudentProfile);
         }

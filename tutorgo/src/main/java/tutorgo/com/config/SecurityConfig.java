@@ -52,6 +52,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/tutores/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/centros-estudio").permitAll()
                         .requestMatchers(HttpMethod.GET, "/tutores/{id}").authenticated()
                         .requestMatchers(HttpMethod.GET, "/notificaciones/mis-notificaciones").authenticated()
                         .anyRequest().authenticated()

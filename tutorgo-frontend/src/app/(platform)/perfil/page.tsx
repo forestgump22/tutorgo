@@ -1,14 +1,19 @@
-// src/app/(platform)/perfil/page.tsx
 "use client";
 
-import { useState, useEffect, FormEvent } from 'react';
-import { useAuthStore } from '@/stores/auth.store'; // Corregido el import
-import { UpdateUserProfileRequest } from '@/models/auth.models';
-import { updateUserProfile } from '@/services/user.service';
-import Link from 'next/link';
+import { useState, useEffect, type FormEvent } from 'react';
+import { useAuthStore } from '@/stores/auth.store';
+import type { UpdateUserProfileRequest } from '@/models/auth.models'; 
+import { updateUserProfile } from '@/services/user.service'; 
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Mail, Camera, CheckCircle, AlertCircle, Loader2, Edit } from "lucide-react";
 
 export default function ProfilePage() {
-  const { user, updateUser, isLoading } = useAuthStore((state) => ({
+  const { user, updateUser: setUserInStore, isLoading: isAuthLoading } = useAuthStore((state) => ({
     user: state.user,
     updateUser: state.updateUser,
     isLoading: state.isLoading,
@@ -18,9 +23,8 @@ export default function ProfilePage() {
   const [fotoUrl, setFotoUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Cuando el usuario del store se cargue, llena el formulario
   useEffect(() => {
     if (user) {
       setNombre(user.nombre);
@@ -30,14 +34,13 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsSubmitting(true);
     setError(null);
     setSuccessMessage(null);
 
-    // HU4 Escenario 2: Campos inválidos o vacíos
     if (!nombre.trim()) {
       setError("El nombre no puede estar vacío.");
-      setLoading(false);
+      setIsSubmitting(false);
       return;
     }
 
@@ -45,95 +48,98 @@ export default function ProfilePage() {
 
     try {
       const updatedUser = await updateUserProfile(profileData);
-      // HU4 Escenario 1: Perfil Actualizado con Éxito
-      updateUser(updatedUser); // Actualiza el estado global en Zustand
+      setUserInStore(updatedUser);
       setSuccessMessage("Perfil actualizado correctamente.");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Error al actualizar el perfil");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (isLoading) {
-    return <div className="text-center p-8">Cargando perfil...</div>;
+  if (isAuthLoading) {
+    return (
+        <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+    );
   }
 
   if (!user) {
-    return <div className="text-center p-8">No se pudo cargar la información del perfil.</div>;
+    return (
+      <Card className="m-auto mt-10 max-w-md">
+          <CardContent className="p-8 text-center">
+            <AlertCircle className="h-12 w-12 mx-auto text-red-500 mb-4" />
+            <h2 className="text-xl font-semibold">Error</h2>
+            <p className="text-muted-foreground">No se pudo cargar la información del perfil.</p>
+          </CardContent>
+      </Card>
+    );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-      {/* Columna de Navegación */}
-      <div className="md:col-span-1">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-lg font-semibold mb-4">Configuración de Cuenta</h2>
-          <nav className="flex flex-col space-y-2">
-            <Link href="/perfil" className="text-blue-600 font-bold bg-blue-50 p-2 rounded">Editar Perfil</Link>
-            {/* ***** ENLACE AÑADIDO ***** */}
-            <Link href="/metodos-pago" className="text-gray-600 hover:bg-gray-100 p-2 rounded">Métodos de Pago</Link>
-            <Link href="/cambiar-contrasena" className="text-gray-600 hover:bg-gray-100 p-2 rounded">Cambiar Contraseña</Link>
-            <Link href="/eliminar-cuenta" className="text-red-600 hover:bg-red-50 p-2 rounded">Eliminar Cuenta</Link>
-          </nav>
+    <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Mi Perfil</h1>
+          <p className="text-muted-foreground">Actualiza tu información personal y foto de perfil.</p>
         </div>
-      </div>
 
-      {/* Columna Principal con el Formulario */}
-      <div className="md:col-span-2">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h1 className="text-2xl font-bold text-gray-800 mb-6">Editar Perfil</h1>
-          
-          <div className="min-h-[3rem] mb-4">
-            {successMessage && <div className="p-3 text-sm text-green-700 bg-green-100 rounded-lg">{successMessage}</div>}
-            {error && <div className="p-3 text-sm text-red-700 bg-red-100 rounded-lg">{error}</div>}
-          </div>
+        {successMessage && (
+            <Alert className="mb-6 border-green-200 bg-green-50 text-green-700">
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>{successMessage}</AlertDescription>
+            </Alert>
+        )}
+        {error && (
+            <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <img
-                src={fotoUrl || `https://ui-avatars.com/api/?name=${nombre}&background=0D8ABC&color=fff&size=96`}
-                alt="Avatar"
-                className="w-24 h-24 rounded-full object-cover"
-              />
-              <div className="flex-grow">
-                <label htmlFor="nombre" className="block text-sm font-medium text-gray-700">Nombre Completo</label>
-                <input
-                  type="text" id="nombre" name="nombre" value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="fotoUrl" className="block text-sm font-medium text-gray-700">URL de la Foto de Perfil</label>
-              <input
-                type="url" id="fotoUrl" name="fotoUrl" value={fotoUrl}
-                onChange={(e) => setFotoUrl(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Correo Electrónico</label>
-                <input
-                    type="email" id="email" name="email" value={user.email}
-                    disabled
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
-                />
-                 <p className="mt-1 text-xs text-gray-500">El correo electrónico no se puede cambiar.</p>
-            </div>
-            <div className="flex justify-end">
-              <button
-                type="submit" disabled={loading}
-                className="inline-flex justify-center py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70"
-              >
-                {loading ? 'Guardando...' : 'Guardar Cambios'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>Información del Perfil</CardTitle>
+                <CardDescription>Estos datos son visibles para otros usuarios en la plataforma.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="flex items-center space-x-6">
+                        <div className="relative">
+                            <Avatar className="h-24 w-24">
+                                <AvatarImage src={fotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(nombre)}&background=0D8ABC&color=fff&size=96`} alt="Avatar"/>
+                                <AvatarFallback>{nombre?.charAt(0).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <Button type="button" size="icon" variant="outline" className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-background">
+                                <Camera className="h-4 w-4"/>
+                            </Button>
+                        </div>
+                         <div className="w-full space-y-2">
+                            <Label htmlFor="email">Correo Electrónico (no se puede cambiar)</Label>
+                            <Input id="email" type="email" value={user.email} disabled />
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="nombre">Nombre Completo</Label>
+                            <Input id="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="fotoUrl">URL de la Foto de Perfil</Label>
+                            <Input id="fotoUrl" type="url" placeholder="https://ejemplo.com/imagen.png" value={fotoUrl} onChange={(e) => setFotoUrl(e.target.value)} />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end pt-4">
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+                        </Button>
+                    </div>
+                </form>
+            </CardContent>
+        </Card>
     </div>
   );
 }
