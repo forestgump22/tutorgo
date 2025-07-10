@@ -6,6 +6,7 @@ import "./globals.css";
 import { useAuthStore } from "@/stores/auth.store"; // Ajusta la ruta si es necesario
 import { useEffect } from "react";
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { ChatProvider } from "@/components/ai/floating-chat"
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -30,7 +31,7 @@ export default function RootLayout({
     return (
         <html lang="es">
           <body className={`${poppins.className} flex flex-col min-h-screen`}>
-            {children}
+            <ChatProvider>{children}</ChatProvider>
           </body>
         </html>
     );
