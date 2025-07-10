@@ -1,49 +1,49 @@
-// src/app/layout.tsx
-"use client"; // El RootLayout que usa hooks DEBE ser un client component
+'use client'
 
-import { Poppins } from "next/font/google";
-import "./globals.css";
-import { useAuthStore } from "@/stores/auth.store"; // Ajusta la ruta si es necesario
-import { useEffect } from "react";
-import { GoogleOAuthProvider } from '@react-oauth/google';
+import { Poppins } from 'next/font/google'
+import './globals.css'
+import { useEffect } from 'react'
+import { GoogleOAuthProvider } from '@react-oauth/google'
+import { useAuthStore } from '@/stores/auth.store'
 
 const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+})
 
-const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID; // <-- 2. Obtener el ID
+const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
-  const hydrateAuth = useAuthStore((state) => state.hydrateAuth);
+  const hydrateAuth = useAuthStore((state) => state.hydrateAuth)
 
   useEffect(() => {
-    hydrateAuth();
-  }, [hydrateAuth]);
+    hydrateAuth()
+  }, [hydrateAuth])
 
   if (!googleClientId) {
-    console.error("Falta el ID de cliente de Google. Añade NEXT_PUBLIC_GOOGLE_CLIENT_ID a tu .env.local");
+    console.error(
+      'Falta el ID de cliente de Google. Añade NEXT_PUBLIC_GOOGLE_CLIENT_ID a tu .env.local'
+    )
     return (
-        <html lang="es">
-          <body className={`${poppins.className} flex flex-col min-h-screen`}>
-            {children}
-          </body>
-        </html>
-    );
+      <html lang="es">
+        <body className={`${poppins.className} flex flex-col min-h-screen`}>
+          {children}
+        </body>
+      </html>
+    )
   }
 
   return (
     <html lang="es">
       <body className={`${poppins.className} flex flex-col min-h-screen`}>
-        {/* 3. Envolver a los hijos */}
         <GoogleOAuthProvider clientId={googleClientId}>
-            {children}
+          {children}
         </GoogleOAuthProvider>
       </body>
     </html>
-  );
+  )
 }
