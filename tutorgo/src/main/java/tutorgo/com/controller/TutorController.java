@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +18,9 @@ import tutorgo.com.utils.AppConstants;
 
 import tutorgo.com.dto.response.DisponibilidadResponse;
 import tutorgo.com.service.DisponibilidadService;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -35,11 +39,16 @@ public class TutorController {
             @RequestParam(value = "page", defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) int page,
             @RequestParam(value = "size", defaultValue = "9") int size,
             @RequestParam(value = "sortBy", defaultValue = AppConstants.DEFAULT_SORT_BY_TUTOR) String sortBy,
-            @RequestParam(value = "sortDir", defaultValue = AppConstants.DEFAULT_SORT_DIRECTION) String sortDir
+            @RequestParam(value = "sortDir", defaultValue = AppConstants.DEFAULT_SORT_DIRECTION) String sortDir,
+            @RequestParam(value = "fechaInicio", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+            @RequestParam(value = "fechaFin", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
+            @RequestParam(value = "horaInicio", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime horaInicio, // <-- Nuevo
+            @RequestParam(value = "horaFin", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime horaFin
     ) {
         Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-        PagedResponse<TutorSummaryResponse> response = tutorService.getAllTutores(query, maxPrecio, puntuacion, pageable);
+        PagedResponse<TutorSummaryResponse> response = tutorService.getAllTutores(
+                query, maxPrecio, puntuacion, fechaInicio, fechaFin, horaInicio, horaFin, pageable);
         return ResponseEntity.ok(response);
     }
 

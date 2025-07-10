@@ -1,26 +1,30 @@
-// src/app/(platform)/tutores/[tutorId]/page.tsx
-
-import { getTutorProfileById } from "@/services/tutor.service"; // Ahora esta importación funcionará
-import { TutorProfile } from "@/models/tutor.models";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faStar as faStarSolid } from '@fortawesome/free-solid-svg-icons';
-import { faStar as faStarRegular } from '@fortawesome/free-regular-svg-icons';
-import { ReservaTutoria } from './ReservaTutoria'; 
+import { getTutorProfileById } from "@/services/tutor.service";
+import type { TutorProfile } from "@/models/tutor.models";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Star, Clock, Award, BookOpen, Users, AlertCircle, UserCircle } from "lucide-react";
+import { ReservaTutoria } from './ReservaTutoria';
 
 const renderStars = (rating: number) => {
   const stars = [];
   const fullStars = Math.floor(rating);
-  for (let i = 0; i < fullStars; i++) stars.push(<FontAwesomeIcon key={`full-${i}`} icon={faStarSolid} className="text-yellow-400" />);
-  const emptyStars = 5 - fullStars;
-  for (let i = 0; i < emptyStars; i++) stars.push(<FontAwesomeIcon key={`empty-${i}`} icon={faStarRegular} className="text-gray-300" />);
+  const hasHalfStar = rating % 1 !== 0; // Simplificado para mostrar llena o vacía
+
+  for (let i = 0; i < fullStars; i++) {
+    stars.push(<Star key={`full-${i}`} className="h-4 w-4 text-yellow-400 fill-yellow-400" />);
+  }
+
+  const emptyStars = 5 - Math.ceil(rating);
+  for (let i = 0; i < emptyStars; i++) {
+    stars.push(<Star key={`empty-${i}`} className="h-4 w-4 text-gray-300" />);
+  }
   return stars;
 };
 
-// Este es un Server Component, ideal para cargar los datos del perfil.
 export default async function TutorProfilePage({ params }: { params: { tutorId: string } }) {
   const tutorId = Number(params.tutorId);
 
-  // Validar que tutorId es un número válido
   if (isNaN(tutorId)) {
     return (
         <div className="text-center py-20">
@@ -40,44 +44,76 @@ export default async function TutorProfilePage({ params }: { params: { tutorId: 
   }
 
   if (error || !tutor) {
-    return (
-      <div className="text-center py-20">
-        <h1 className="text-2xl font-bold text-red-600">Error al Cargar Perfil</h1>
-        <p className="text-gray-600 mt-2">{error || "El tutor no fue encontrado."}</p>
-      </div>
+     return (
+      <Card className="m-auto mt-10 max-w-lg border-destructive bg-red-50">
+          <CardContent className="p-8 text-center">
+            <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+            <h2 className="text-xl font-semibold text-destructive">Error al Cargar Perfil</h2>
+            <p className="text-muted-foreground mt-2">{error || "El tutor no fue encontrado."}</p>
+          </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-        <div className="p-8">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8">
-            <div className="flex-shrink-0 text-center">
-              <img
-                src={tutor.fotoUrlUsuario || `https://ui-avatars.com/api/?name=${encodeURIComponent(tutor.nombreUsuario)}&size=128&background=0D8ABC&color=fff`}
-                alt={`Foto de ${tutor.nombreUsuario}`}
-                className="w-32 h-32 rounded-full object-cover mx-auto border-4 border-blue-200"
-              />
-              <div className="mt-4 flex justify-center text-yellow-400">{renderStars(tutor.estrellasPromedio)}</div>
-              <span className="text-sm text-gray-500">({tutor.estrellasPromedio.toFixed(1)} de calificación)</span>
-              <div className="mt-4 text-3xl font-bold text-blue-600">
-                S/{tutor.tarifaHora}<span className="text-base font-normal text-gray-500"> / hora</span>
+    <div className="max-w-6xl mx-auto">
+      {/* CARD DE ENCABEZADO CON BANNER */}
+      <Card className="mb-8 overflow-hidden shadow-lg">
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 h-32 md:h-40" />
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 -mt-20">
+            <Avatar className="w-32 h-32 border-4 border-background shadow-md">
+              <AvatarImage src={tutor.fotoUrlUsuario || ''} alt={`Foto de ${tutor.nombreUsuario}`} />
+              <AvatarFallback className="text-4xl">{tutor.nombreUsuario.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 text-center sm:text-left">
+              <Badge variant="secondary" className="mb-2 bg-white">{tutor.rubro}</Badge>
+              <h1 className="text-3xl font-bold text-card-foreground">{tutor.nombreUsuario}</h1>
+              <div className="flex items-center justify-center sm:justify-start gap-2 mt-1 text-muted-foreground">
+                {renderStars(tutor.estrellasPromedio)}
+                <span className="font-semibold">{tutor.estrellasPromedio.toFixed(1)}</span>
+                <span>(34 reseñas)</span>
               </div>
             </div>
-            <div className="flex-grow">
-              <span className="inline-block bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full mb-2">{tutor.rubro}</span>
-              <h1 className="text-4xl font-extrabold text-gray-900">{tutor.nombreUsuario}</h1>
-              <div className="mt-6">
-                <h2 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">Sobre mí</h2>
-                <p className="text-gray-700 whitespace-pre-wrap">{tutor.bio || 'Este tutor aún no ha añadido una biografía.'}</p>
-              </div>
+            <div className="text-center sm:text-right">
+              <p className="text-3xl font-extrabold text-primary">S/{tutor.tarifaHora}</p>
+              <p className="text-sm text-muted-foreground">por hora</p>
             </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
+
+      {/* CONTENIDO PRINCIPAL EN DOS COLUMNAS */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-          {/* Componente cliente para la funcionalidad de reserva */}
-          <ReservaTutoria tutorId={tutor.id} tarifaHora={tutor.tarifaHora} />      
+        {/* Columna Izquierda: Información */}
+        <div className="lg:col-span-2 space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><UserCircle className="h-5 w-5 text-blue-600"/>Sobre Mí</CardTitle>
+                </CardHeader>
+                <CardContent className="text-muted-foreground whitespace-pre-wrap">
+                    {tutor.bio || 'Este tutor aún no ha añadido una biografía.'}
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-blue-600" />Especialidades</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-2">
+                    {tutor.rubro.split(/, | |y/g).filter(s => s).map((specialty, index) => (
+                        <Badge key={index} variant="outline">{specialty}</Badge>
+                    ))}
+                </CardContent>
+            </Card>
+        </div>
+
+        {/* Columna Derecha: Reserva */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-20">
+            <ReservaTutoria tutorId={tutor.id} tarifaHora={tutor.tarifaHora} />      
+          </div>
+        </div>
       </div>
     </div>
   );

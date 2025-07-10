@@ -1,26 +1,29 @@
-// src/app/(platform)/mis-clases/page.tsx
 "use client";
 
-import { useEffect, useState, FormEvent, useCallback } from 'react';
-import { SesionResponse } from '@/models/sesion.models';
-import { EnlaceSesionRequest, EnlaceSesionResponse } from '@/models/enlace.models';
-import { getMisClases} from '@/services/tutor.clases.service';
-import { addEnlaces, deleteEnlace } from '@/services/enlace.service'; // Importa los servicios de enlace
+import { useEffect, useState, type FormEvent, useCallback } from 'react';
+import type { SesionResponse } from '@/models/sesion.models';
+import type { EnlaceSesionRequest, EnlaceSesionResponse } from '@/models/enlace.models';
+import { getMisClases } from '@/services/tutor.clases.service';
+import { addEnlaces, deleteEnlace } from '@/services/enlace.service';
 import { useAuthStore } from '@/stores/auth.store';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faLink, faTrash, faPlus, faTimes, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
-// Componente para el Modal/Formulario de gestión de enlaces
-const GestionarEnlaces = ({ sesion, onClose, onUpdate }: { sesion: SesionResponse, onClose: () => void, onUpdate: () => void }) => {
-    const [enlaces, setEnlaces] = useState<EnlaceSesionResponse[]>(sesion.enlaces || []);
+// Importando componentes de UI y lucide-react
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Link as LinkIcon, Trash2, Plus, Loader2, AlertCircle, Calendar, Clock, User, BookUser } from "lucide-react";
+import Link from 'next/link';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
+// --- MODAL PARA GESTIONAR ENLACES ---
+const GestionarEnlacesModal = ({ sesion, onClose, onUpdate }: { sesion: SesionResponse, onClose: () => void, onUpdate: () => void }) => {
     const [nombre, setNombre] = useState('');
     const [enlace, setEnlace] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    useEffect(() => {
-        setEnlaces(sesion.enlaces || []);
-    }, [sesion.enlaces]);
 
     const handleAddEnlace = async (e: FormEvent) => {
         e.preventDefault();
@@ -31,13 +34,11 @@ const GestionarEnlaces = ({ sesion, onClose, onUpdate }: { sesion: SesionRespons
         setIsSubmitting(true);
         setError(null);
         
-        const nuevoEnlace: EnlaceSesionRequest = { nombre, enlace };
-
         try {
             await addEnlaces(sesion.id, [{ nombre, enlace }]);
             setNombre('');
             setEnlace('');
-            onUpdate(); // Llama a la función del padre para refrescar la lista completa
+            onUpdate();
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -53,59 +54,58 @@ const GestionarEnlaces = ({ sesion, onClose, onUpdate }: { sesion: SesionRespons
         } catch (err: any) {
             alert(err.message);
         }
-    }
+    };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg relative animate-fadeIn">
-                <button onClick={onClose} className="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-800">
-                    <FontAwesomeIcon icon={faTimes} />
-                </button>
-                <h3 className="text-xl font-bold mb-4">Gestionar Enlaces para la sesión con {sesion.nombreEstudiante}</h3>
-                
-                {/* Lista de enlaces existentes */}
-                <div className="space-y-2 mb-6 max-h-48 overflow-y-auto p-2 border rounded-md bg-gray-50">
-                    {enlaces.length > 0 ? enlaces.map(link => (
-                        <div key={link.id} className="flex justify-between items-center bg-white p-2 rounded shadow-sm">
-                            <a href={link.enlace} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate" title={link.enlace}>{link.nombre}</a>
-                            <button onClick={() => handleDeleteEnlace(link.id)} className="text-red-500 hover:text-red-700 ml-4 p-1 rounded-full hover:bg-red-100" title="Eliminar enlace">
-                                <FontAwesomeIcon icon={faTrash} />
-                            </button>
-                        </div>
-                    )) : <p className="text-gray-500 text-sm text-center">No hay enlaces añadidos.</p>}
+        <Dialog open onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><LinkIcon className="h-5 w-5 text-blue-600" />Gestionar Enlaces</DialogTitle>
+                    <DialogDescription>Añade o elimina enlaces para la sesión con {sesion.nombreEstudiante}.</DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-6">
+                    <div className="space-y-3 max-h-48 overflow-y-auto p-2 border rounded-md bg-secondary/50">
+                        {sesion.enlaces?.length > 0 ? sesion.enlaces.map(link => (
+                            <div key={link.id} className="flex justify-between items-center bg-background p-2 rounded shadow-sm">
+                                <a href={link.enlace} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate text-sm" title={link.enlace}>{link.nombre}</a>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteEnlace(link.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        )) : <p className="text-muted-foreground text-sm text-center py-4">No hay enlaces añadidos.</p>}
+                    </div>
+                    {sesion.enlaces?.length < 5 && (
+                        <form onSubmit={handleAddEnlace} className="space-y-4 border-t pt-4">
+                            <h4 className="font-semibold text-card-foreground">Añadir Nuevo Enlace</h4>
+                            <div className="space-y-2">
+                                <Label htmlFor="nombre">Nombre del Enlace</Label>
+                                <Input id="nombre" value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Ej: Material de Clase, Enlace de Meet" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="enlace">URL del Enlace</Label>
+                                <Input type="url" id="enlace" value={enlace} onChange={e => setEnlace(e.target.value)} placeholder="https://..." />
+                            </div>
+                            {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
+                            <Button type="submit" disabled={isSubmitting || !nombre || !enlace} className="w-full">
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {isSubmitting ? 'Añadiendo...' : 'Añadir Enlace'}
+                            </Button>
+                        </form>
+                    )}
+                    {sesion.enlaces?.length >= 5 && <p className="text-center text-sm text-muted-foreground pt-4 border-t">Has alcanzado el límite de 5 enlaces.</p>}
                 </div>
-
-                {/* Formulario para añadir nuevo enlace */}
-                {enlaces.length < 5 && (
-                    <form onSubmit={handleAddEnlace} className="space-y-3 border-t pt-4">
-                        <h4 className="font-semibold text-gray-800">Añadir Nuevo Enlace</h4>
-                        <div>
-                            <label htmlFor="nombre" className="block text-sm font-medium text-gray-700">Nombre del Enlace</label>
-                            <input type="text" id="nombre" value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Ej: Material de Clase" className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"/>
-                        </div>
-                        <div>
-                            <label htmlFor="enlace" className="block text-sm font-medium text-gray-700">URL del Enlace</label>
-                            <input type="url" id="enlace" value={enlace} onChange={e => setEnlace(e.target.value)} placeholder="https://..." className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"/>
-                        </div>
-                        {error && <p className="text-red-500 text-sm">{error}</p>}
-                        <button type="submit" disabled={isSubmitting || !nombre || !enlace} className="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 flex items-center justify-center gap-2">
-                            {isSubmitting ? <FontAwesomeIcon icon={faSpinner} spin/> : <FontAwesomeIcon icon={faPlus} />}
-                            <span>Añadir Enlace</span>
-                        </button>
-                    </form>
-                )}
-                 {enlaces.length >= 5 && <p className="text-center text-sm text-gray-500 mt-4">Has alcanzado el límite de 5 enlaces.</p>}
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 };
 
-
+// --- COMPONENTE PRINCIPAL DE LA PÁGINA ---
 export default function MisClasesPage() {
     const user = useAuthStore((state) => state.user);
-    const [sesiones, setSesiones] = useState<(SesionResponse & { enlaces?: EnlaceSesionResponse[] })[]>([]);
+    const [sesiones, setSesiones] = useState<SesionResponse[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedSesion, setSelectedSesion] = useState<SesionResponse & { enlaces?: EnlaceSesionResponse[] } | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedSesion, setSelectedSesion] = useState<SesionResponse | null>(null);
 
     const fetchClases = useCallback(() => {
         setLoading(true);
@@ -114,46 +114,93 @@ export default function MisClasesPage() {
                 const sortedData = data.sort((a, b) => new Date(a.horaInicial).getTime() - new Date(b.horaInicial).getTime());
                 setSesiones(sortedData);
             })
+            .catch(err => setError(err.message))
             .finally(() => setLoading(false));
     }, []);
 
     useEffect(() => {
-        fetchClases();
-    }, [fetchClases]);
+        if (user?.rol === 'TUTOR') {
+            fetchClases();
+        } else if (user) {
+            setLoading(false);
+        }
+    }, [user, fetchClases]);
     
-    if (user && user.rol !== 'TUTOR') {
-        return <div className="text-center p-8"><h1 className="text-2xl font-bold text-red-600">Acceso Denegado</h1><p className="text-gray-600 mt-2">Esta página es solo para tutores.</p></div>;
+    if (loading) {
+        return <div className="flex justify-center items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
     }
-    
-    return (
-        <div className="max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold text-gray-800 mb-6">Mis Clases Programadas</h1>
-            
-            {loading && <p>Cargando clases...</p>}
 
-            <div className="space-y-4">
-                {sesiones.filter(s => s.tipoEstado === 'CONFIRMADO').map(sesion => (
-                    <div key={sesion.id} className="bg-white p-4 rounded-lg shadow-md flex justify-between items-center">
-                        <div>
-                            <p className="font-bold">Clase con {sesion.nombreEstudiante}</p>
-                            <p className="text-sm text-gray-600">{new Date(sesion.horaInicial).toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' })}</p>
-                        </div>
-                        <button onClick={() => setSelectedSesion(sesion)} className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                            <FontAwesomeIcon icon={faLink} /> Gestionar Enlaces
-                        </button>
-                    </div>
-                ))}
-                {!loading && sesiones.filter(s => s.tipoEstado === 'CONFIRMADO').length === 0 && (
-                    <p className="text-center text-gray-500 p-8">No tienes clases confirmadas.</p>
-                )}
+    if (user?.rol !== 'TUTOR') {
+        return (
+            <Card className="m-auto mt-10 max-w-lg border-destructive bg-red-50">
+                <CardContent className="p-8 text-center">
+                    <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+                    <h2 className="text-xl font-semibold text-destructive">Acceso Denegado</h2>
+                    <p className="text-muted-foreground mt-2">Esta sección es exclusiva para tutores.</p>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    const clasesConfirmadas = sesiones.filter(s => s.tipoEstado === 'CONFIRMADO');
+    const formatDate = (dateTimeString: string) => new Date(dateTimeString).toLocaleDateString("es-ES", { weekday: 'long', day: 'numeric', month: 'long' });
+    const formatTime = (dateTimeString:string) => new Date(dateTimeString).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+    return (
+        <div className="max-w-4xl mx-auto space-y-8">
+             <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis Clases Programadas</h1>
+                <p className="text-muted-foreground">Gestiona los materiales y enlaces para tus próximas sesiones.</p>
             </div>
 
+            <Card>
+                <CardHeader>
+                    <CardTitle>Clases Confirmadas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
+                    
+                    {!error && clasesConfirmadas.length === 0 ? (
+                         <div className="text-center py-16 text-muted-foreground">
+                            <BookUser className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                            <h3 className="font-semibold text-lg text-card-foreground">No tienes clases programadas</h3>
+                            <p className="mt-1">Cuando un estudiante confirme una tutoría, aparecerá aquí.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {clasesConfirmadas.map(sesion => (
+                                <div key={sesion.id} className="p-4 border rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar>
+                                                <AvatarFallback>{sesion.nombreEstudiante?.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="font-semibold">Clase con {sesion.nombreEstudiante}</p>
+                                                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                    <Calendar className="h-3 w-3"/>{formatDate(sesion.horaInicial)}
+                                                    <span className="text-gray-300">|</span> 
+                                                    <Clock className="h-3 w-3"/>{formatTime(sesion.horaInicial)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <Button onClick={() => setSelectedSesion(sesion)} className="w-full sm:w-auto">
+                                        <LinkIcon className="mr-2 h-4 w-4" /> Gestionar Enlaces
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
             {selectedSesion && (
-                <GestionarEnlaces 
+                <GestionarEnlacesModal 
                     sesion={selectedSesion} 
                     onClose={() => setSelectedSesion(null)}
                     onUpdate={() => {
-                        fetchClases(); // Refresca toda la lista para obtener los nuevos enlaces
+                        fetchClases(); // Refresca para obtener los nuevos enlaces
                         setSelectedSesion(null);
                     }} 
                 />

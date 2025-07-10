@@ -2,15 +2,15 @@
 export interface PagoResponse {
   id: number;
   tutorId: number;
-  nombreTutor?: string; // Nombre para mostrar
+  nombreTutor?: string;
   estudianteId: number;
-  nombreEstudiante?: string; // Nombre para mostrar
+  nombreEstudiante?: string;
   monto: number;
   comisionPlataforma: number;
   metodoPago: string;
   tipoEstado: 'COMPLETADO' | 'PENDIENTE' | 'FALLIDO';
-  sesionId: number;
-  fechaPago: string; // Formato ISO
+  sesionId: number | null;
+  fechaPago: string | null;
   descripcion: string;
 }
 

@@ -1,4 +1,3 @@
-// src/app/(auth)/login/page.tsx
 "use client";
 
 import { useState, FormEvent, useEffect, useCallback } from 'react';
@@ -6,8 +5,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { setCookie } from 'cookies-next';
 import { useAuthStore } from '@/stores/auth.store';
 import { loginUser, loginWithGoogle } from '@/services/auth.service';
-import { LoginRequest, AuthResponse } from '@/models/auth.models';
+import type { LoginRequest, AuthResponse } from '@/models/auth.models';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
+import Link from 'next/link';
+
+// Importando los componentes de shadcn/ui
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, LogIn, AlertCircle, CheckCircle } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -16,31 +25,31 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [successMessage, setSuccessMessage] = useState<string | null>(null); // Nuevo estado para mensajes de éxito
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const setAuth = useAuthStore((state) => state.setAuth);
 
   useEffect(() => {
-    // Leer el mensaje de la URL cuando el componente se carga
     const message = searchParams.get('message');
     if (message) {
       setSuccessMessage(message);
     }
   }, [searchParams]);
-
-   const handleAuthSuccess = useCallback((response: AuthResponse) => {
-      setCookie('token', response.accessToken, {
-          path: '/',
-          maxAge: 60 * 60 * 24, // 1 día
-      });
-      setAuth(response.accessToken, response.user);
-      router.push('/dashboard');
-      router.refresh(); 
+  
+  const handleAuthSuccess = useCallback((response: AuthResponse) => {
+    setCookie('token', response.accessToken, {
+        path: '/',
+        maxAge: 60 * 60 * 24, // 1 día
+    });
+    setAuth(response.accessToken, response.user);
+    router.push('/dashboard');
+    router.refresh(); 
   }, [setAuth, router]);
-
-   const handleSubmit = async (e: FormEvent) => {
+  
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMessage(null); // Limpiar mensajes al intentar de nuevo
     const credentials: LoginRequest = { email, password };
     try {
       const response = await loginUser(credentials);
@@ -52,21 +61,22 @@ export default function LoginPage() {
     }
   };
 
-    const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
-        setLoading(true);
-        setError(null);
-        try {
-            if (credentialResponse.credential) {
-                const response = await loginWithGoogle(credentialResponse.credential);
-                handleAuthSuccess(response);
-            } else {
-                throw new Error("No se recibió la credencial de Google.");
-            }
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-          setLoading(false);
-        }
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+      setLoading(true);
+      setError(null);
+      setSuccessMessage(null);
+      try {
+          if (credentialResponse.credential) {
+              const response = await loginWithGoogle(credentialResponse.credential);
+              handleAuthSuccess(response);
+          } else {
+              throw new Error("No se recibió la credencial de Google.");
+          }
+      } catch (err: any) {
+          setError(err.message);
+      } finally {
+        setLoading(false);
+      }
   };
 
   const handleGoogleError = () => {
@@ -74,83 +84,90 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
-        <h2 className="text-3xl font-extrabold text-center text-gray-900">
-          Iniciar Sesión en TutorGo
-        </h2>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 px-4">
+      <Card className="w-full max-w-md shadow-2xl">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">Iniciar Sesión en TutorGo</CardTitle>
+          <CardDescription>Ingresa a tu cuenta para continuar</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {successMessage && (
+            <Alert className="border-green-200 bg-green-50 text-green-700">
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>{successMessage}</AlertDescription>
+            </Alert>
+          )}
+          {error && (
+             <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-        <div className="min-h-[3rem]">
-          {successMessage && <div className="p-3 text-sm text-green-700 bg-green-100 rounded-lg">{successMessage}</div>}
-          {error && <div className="p-3 text-sm text-red-700 bg-red-100 rounded-lg">{error}</div>}
-        </div>
-
-        <div className="flex justify-center">
+          <div className="flex justify-center">
             <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={handleGoogleError}
                 useOneTap
+                theme="filled_blue"
+                shape="rectangular"
             />
-        </div>
+          </div>
 
-        <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-gray-300"></div>
-            <span className="flex-shrink mx-4 text-gray-400 text-sm">O continúa con</span>
-            <div className="flex-grow border-t border-gray-300"></div>
-        </div>
+          <div className="relative flex items-center">
+              <Separator className="flex-1" />
+              <span className="flex-shrink px-2 text-xs text-muted-foreground">O</span>
+              <Separator className="flex-1" />
+          </div>
         
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Correo Electrónico
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="email">Correo Electrónico</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="tu@correo.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+              />
+            </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Contraseña
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+              />
+            </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
-            >
-              {loading ? 'Ingresando...' : 'Iniciar Sesión'}
-            </button>
-          </div>
-        </form>
-        <p className="text-sm text-center text-gray-600">
-          ¿No tienes una cuenta?{' '}
-          <a href="/register" className="font-medium text-blue-600 hover:text-blue-500">
-            Regístrate
-          </a>
-        </p>
-      </div>
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? (
+                <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Ingresando...
+                </>
+               ) : (
+                <>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Iniciar Sesión
+                </>
+              )}
+            </Button>
+          </form>
+          <p className="text-sm text-center text-muted-foreground">
+            ¿No tienes una cuenta?{' '}
+            <Link href="/register" className="font-medium text-primary hover:underline">
+              Regístrate aquí
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

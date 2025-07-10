@@ -1,19 +1,24 @@
-// src/app/(platform)/cambiar-contrasena/page.tsx
 "use client";
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { UpdatePasswordRequest } from '@/models/auth.models';
-import { updateUserPassword } from '@/services/user.service';
+import { useState, type FormEvent } from "react";
+import { updateUserPassword } from "@/services/user.service";
+import type { UpdatePasswordRequest } from "@/models/auth.models";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Lock, Shield, CheckCircle, AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function ChangePasswordPage() {
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -21,39 +26,26 @@ export default function ChangePasswordPage() {
     setError(null);
     setSuccessMessage(null);
 
-    // HU3 Escenario 3: Confirmación no coincide (validación frontend)
     if (newPassword !== confirmNewPassword) {
       setError("La nueva contraseña y su confirmación no coinciden.");
       setLoading(false);
       return;
     }
-
-    // HU3 Escenario 4: Requisitos mínimos (validación frontend básica)
     if (newPassword.length < 8) {
       setError("La nueva contraseña debe tener al menos 8 caracteres.");
       setLoading(false);
       return;
     }
-    // Podrías añadir más validaciones de complejidad aquí
 
-    const passwordData: UpdatePasswordRequest = {
-      currentPassword,
-      newPassword,
-      confirmNewPassword,
-    };
+    const passwordData: UpdatePasswordRequest = { currentPassword, newPassword, confirmNewPassword };
 
     try {
       const response = await updateUserPassword(passwordData);
-      // HU3 Escenario 1: Cambio exitoso
       setSuccessMessage(response.message || "Contraseña actualizada con éxito.");
-      // Limpiar campos después del éxito
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmNewPassword('');
-      // Opcional: redirigir a otra página (ej. perfil)
-      // setTimeout(() => router.push('/perfil'), 2000); 
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
     } catch (err: any) {
-      // HU3 Escenario 2: Contraseña actual inválida (u otros errores del backend)
       setError(err.message || "Ocurrió un error al actualizar la contraseña.");
     } finally {
       setLoading(false);
@@ -61,68 +53,97 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Cambiar Contraseña</h1>
+    <div className="max-w-2xl mx-auto">
+        <div className="mb-8 text-left">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Seguridad de la Cuenta</h1>
+          <p className="text-gray-600">Actualiza tu contraseña para mantener tu cuenta segura.</p>
+        </div>
 
-      <div className="min-h-[3rem] mb-4"> {/* Espacio para mensajes */}
-        {successMessage && (
-          <div className="p-3 text-sm text-green-700 bg-green-100 rounded-lg" role="alert">
-            {successMessage}
-          </div>
-        )}
-        {error && (
-          <div className="p-3 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
-            {error}
-          </div>
-        )}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-blue-600" />
+              Cambiar Contraseña
+            </CardTitle>
+            <CardDescription>
+              Se recomienda usar una contraseña segura que no utilices en otros sitios.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {successMessage && (
+              <Alert className="mb-6 border-green-200 bg-green-50">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-700">{successMessage}</AlertDescription>
+              </Alert>
+            )}
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Contraseña Actual</Label>
+                <div className="relative">
+                  <Input
+                    id="currentPassword"
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                  />
+                  <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">Nueva Contraseña</Label>
+                <div className="relative">
+                  <Input
+                    id="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                  />
+                   <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={() => setShowNewPassword(!showNewPassword)}>
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Mínimo 8 caracteres.</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmNewPassword">Confirmar Nueva Contraseña</Label>
+                <Input
+                  id="confirmNewPassword"
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Actualizando...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="mr-2 h-4 w-4" />
+                    Actualizar Contraseña
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">Contraseña Actual</label>
-          <input
-            type="password"
-            id="currentPassword"
-            name="currentPassword"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-        <div>
-          <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">Nueva Contraseña</label>
-          <input
-            type="password"
-            id="newPassword"
-            name="newPassword"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          />
-          <p className="mt-1 text-xs text-gray-500">Mínimo 8 caracteres.</p>
-        </div>
-        <div>
-          <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-gray-700">Confirmar Nueva Contraseña</label>
-          <input
-            type="password"
-            id="confirmNewPassword"
-            name="confirmNewPassword"
-            value={confirmNewPassword}
-            onChange={(e) => setConfirmNewPassword(e.target.value)}
-            required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70"
-        >
-          {loading ? 'Actualizando...' : 'Actualizar Contraseña'}
-        </button>
-      </form>
-    </div>
   );
 }
