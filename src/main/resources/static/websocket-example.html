@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TutorGo WebSocket Demo</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #connect-container { margin-bottom: 20px; }
+        #notifications { margin-top: 20px; }
+        .notification { 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            margin-bottom: 10px; 
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .notification-title { font-weight: bold; }
+        button { padding: 10px; cursor: pointer; }
+        #status { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>TutorGo WebSocket Demo</h1>
+
+    <div id="connect-container">
+        <button id="connect">Conectar WebSocket</button>
+        <button id="disconnect" disabled>Desconectar</button>
+        <div id="status">Desconectado</div>
+    </div>
+
+    <div>
+        <p>ID de tutor para suscribirse (para pruebas):</p>
+        <input type="number" id="tutorId" value="1">
+        <button id="subscribe">Suscribirse</button>
+    </div>
+
+    <div>
+        <h3>Notificaciones recibidas:</h3>
+        <div id="notifications"></div>
+    </div>
+
+    <script type="text/javascript">
+        let stompClient = null;
+        let subscription = null;
+
+        function setConnected(connected) {
+            document.getElementById('connect').disabled = connected;
+            document.getElementById('disconnect').disabled = !connected;
+            document.getElementById('status').textContent = connected ? 'Conectado' : 'Desconectado';
+        }
+
+        function connect() {
+            const socket = new SockJS('/api/v1/ws');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function(frame) {
+                setConnected(true);
+                console.log('Conectado: ' + frame);
+
+                // Suscribirse al canal de prueba
+                stompClient.subscribe('/topic/test', function(response) {
+                    console.log('Respuesta de prueba: ' + response.body);
+                });
+
+                // Enviar mensaje de prueba
+                stompClient.send('/app/test', {}, JSON.stringify('Mensaje de prueba'));
+            }, function(error) {
+                console.error('Error de conexión:', error);
+                setConnected(false);
+            });
+        }
+
+        function disconnect() {
+            if (stompClient !== null) {
+                if (subscription) {
+                    subscription.unsubscribe();
+                    subscription = null;
+                }
+                stompClient.disconnect();
+            }
+            setConnected(false);
+            console.log('Desconectado');
+        }
+
+        function subscribeToTutorNotifications() {
+            if (!stompClient || !stompClient.connected) {
+                alert('Primero debes conectarte al WebSocket');
+                return;
+            }
+
+            const tutorId = document.getElementById('tutorId').value;
+
+            if (subscription) {
+                subscription.unsubscribe();
+            }
+
+            subscription = stompClient.subscribe('/topic/notificaciones/' + tutorId, function(notification) {
+                showNotification(JSON.parse(notification.body));
+            });
+
+            console.log('Suscrito a notificaciones del tutor ID: ' + tutorId);
+        }
+
+        function showNotification(notification) {
+            const notificationsContainer = document.getElementById('notifications');
+            const notificationDiv = document.createElement('div');
+            notificationDiv.className = 'notification';
+
+            const dateFormatted = new Date(notification.fechaCreacion).toLocaleString();
+
+            notificationDiv.innerHTML = `
+                <div class="notification-title">${notification.titulo}</div>
+                <div>${notification.texto}</div>
+                <div><small>Tipo: ${notification.tipo}</small></div>
+                <div><small>Fecha: ${dateFormatted}</small></div>
+            `;
+
+            notificationsContainer.prepend(notificationDiv);
+
+            // Confirmar recepción al servidor
+            stompClient.send('/app/notificacion-recibida', {}, JSON.stringify(notification));
+        }
+
+        // Event listeners
+        document.getElementById('connect').addEventListener('click', connect);
+        document.getElementById('disconnect').addEventListener('click', disconnect);
+        document.getElementById('subscribe').addEventListener('click', subscribeToTutorNotifications);
+    </script>
+</body>
+</html>
