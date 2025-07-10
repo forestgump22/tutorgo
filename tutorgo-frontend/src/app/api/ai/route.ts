@@ -1,8 +1,6 @@
+'use server';
 // generate a function that returns a Next.js API route handler
-import { GoogleGenAI } from "@google/genai";
-import { NextResponse } from "next/server";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+import { ai } from "@/lib/server/genai";
 
 interface History {
     role: "user" | "model";

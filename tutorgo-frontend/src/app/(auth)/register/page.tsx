@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { registerUser } from '@/services/auth.service';
 import { RegisterRequest, RoleName } from '@/models/auth.models';
-import { CentroEstudio } from '@/models/centroEstudio.models';
+import { CentroEstudio } from '@/models/centroEstudio';
 import { getAllCentrosEstudio } from '@/services/centroEstudio.service';
 
 // Importando componentes de shadcn/ui
