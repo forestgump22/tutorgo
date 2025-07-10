@@ -8,12 +8,10 @@ import type { ResenaRequest } from "@/models/resena.models";
 import { crearResena } from "@/services/resena.service";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CreditCard, Loader2, Link as LinkIcon, Edit3, Star, Calendar, Clock, User, CheckCircle, AlertCircle, Hourglass, BookUser } from "lucide-react";
-import Link from 'next/link';
 import { Label } from "@/components/ui/label";
 
 // --- MODAL PARA CALIFICAR (Sin cambios en lógica, solo usa componentes UI) ---

@@ -15,13 +15,10 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { Footer } from "@/components/shared/Footer"
-import FloatingChat, { ChatProvider } from "@/components/ai/floating-chat"
 
 export default function LandingPage() {
   return (
-    <ChatProvider>
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col">
       {/* Header */}
       <header className="px-4 lg:px-6 h-16 flex items-center border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50">
         <Link href="/" className="flex items-center justify-center">
@@ -53,9 +50,8 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* Hero Section */}
         <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-br from-blue-50 via-white to-purple-50">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px] items-center">
-
+          <div className="container px-4 md:px-6">
+            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                   <Badge className="w-fit bg-blue-100 text-blue-800 hover:bg-blue-200">
@@ -96,7 +92,7 @@ export default function LandingPage() {
               <div className="flex items-center justify-center">
                 <div className="relative">
                   <Image
-                    src="/imagenes/perfirtutorgo.png"
+                    src="/placeholder.svg?height=400&width=400"
                     width="400"
                     height="400"
                     alt="Estudiantes y tutores conectándose"
@@ -117,7 +113,7 @@ export default function LandingPage() {
 
         {/* Sección 1: Características Principales */}
         <section id="caracteristicas" className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container mx-auto max-w-7xl px-4 md:px-6">
+          <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <Badge className="bg-purple-100 text-purple-800">Características</Badge>
@@ -165,7 +161,7 @@ export default function LandingPage() {
 
         {/* Sección 2: Cómo Funciona */}
         <section id="como-funciona" className="w-full py-12 md:py-24 lg:py-32 bg-gray-50">
-  <div className="container mx-auto max-w-7xl px-4 md:px-6">
+          <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <Badge className="bg-blue-100 text-blue-800">Proceso Simple</Badge>
@@ -211,7 +207,7 @@ export default function LandingPage() {
 
         {/* Sección 3: Para Estudiantes */}
         <section id="estudiantes" className="w-full py-12 md:py-24 lg:py-32">
-  <div className="container mx-auto max-w-7xl px-4 md:px-6">
+          <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-[1fr_500px] lg:gap-12 xl:grid-cols-[1fr_550px]">
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
@@ -244,7 +240,7 @@ export default function LandingPage() {
                 <Button className="w-fit bg-green-600 hover:bg-green-700">Únete como Estudiante</Button>
               </div>
               <Image
-                src="/imagenes/paraestudiantes2.jpg"
+                src="/placeholder.svg?height=400&width=550"
                 width="550"
                 height="400"
                 alt="Estudiante aprendiendo"
@@ -256,10 +252,10 @@ export default function LandingPage() {
 
         {/* Sección 4: Para Tutores */}
         <section id="tutores" className="w-full py-12 md:py-24 lg:py-32 bg-gray-50">
-  <div className="container mx-auto max-w-7xl px-4 md:px-6">
+          <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-[500px_1fr] lg:gap-12 xl:grid-cols-[550px_1fr]">
               <Image
-                src="/imagenes/libros.jpg"
+                src="/placeholder.svg?height=400&width=550"
                 width="550"
                 height="400"
                 alt="Tutor enseñando"
@@ -301,7 +297,7 @@ export default function LandingPage() {
 
         {/* Sección 5: Testimonios y Estadísticas */}
         <section id="testimonios" className="w-full py-12 md:py-24 lg:py-32">
-  <div className="container mx-auto max-w-7xl px-4 md:px-6">
+          <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <Badge className="bg-yellow-100 text-yellow-800">Testimonios</Badge>
@@ -385,7 +381,7 @@ export default function LandingPage() {
 
         {/* Sección del Equipo Creador */}
         <section id="equipo" className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-br from-gray-50 to-blue-50">
-  <div className="container mx-auto max-w-7xl px-4 md:px-6">
+          <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <Badge className="bg-indigo-100 text-indigo-800">Nuestro Equipo</Badge>
@@ -402,7 +398,7 @@ export default function LandingPage() {
               <Card className="border-2 hover:border-indigo-200 transition-all duration-300 hover:shadow-lg">
                 <CardHeader className="text-center">
                   <Image
-                  src={"/imagenes/cesar.png"}
+                  src="/imagenes/cesar.png"
                   alt="Foto de Cesar"
                   width={80}
                   height={80}
@@ -423,7 +419,7 @@ export default function LandingPage() {
               <Card className="border-2 hover:border-indigo-200 transition-all duration-300 hover:shadow-lg">
                 <CardHeader className="text-center">
                   <Image
-                  src={"/imagenes/Imanol.png"}
+                  src="/imagenes/Imanol.png"
                   alt="Foto de Imanol"
                   width={80}
                   height={80}
@@ -445,7 +441,7 @@ export default function LandingPage() {
               <Card className="border-2 hover:border-indigo-200 transition-all duration-300 hover:shadow-lg">
                 <CardHeader className="text-center">
                   <Image
-                  src={"/imagenes/Ian.png"}
+                  src="/imagenes/Ian.png"
                   alt="Foto de Ian"
                   width={80}
                   height={80}
@@ -466,7 +462,7 @@ export default function LandingPage() {
               <Card className="border-2 hover:border-indigo-200 transition-all duration-300 hover:shadow-lg lg:col-start-1 lg:col-end-2 lg:mx-auto">
                 <CardHeader className="text-center">
                   <Image
-                  src={"/imagenes/Bruno.png"}
+                  src="/imagenes/Bruno.png"
                   alt="Foto de  Bruno"
                   width={80}
                   height={80}
@@ -487,7 +483,7 @@ export default function LandingPage() {
               <Card className="border-2 hover:border-indigo-200 transition-all duration-300 hover:shadow-lg lg:col-start-3 lg:col-end-4 lg:mx-auto">
                 <CardHeader className="text-center">
                   <Image
-                  src={"/imagenes/Christian.png"}
+                  src="/imagenes/Christian.png"
                   alt="Foto de Chrisian"
                   width={80}
                   height={80}
@@ -528,16 +524,15 @@ export default function LandingPage() {
 
         {/* Call to Action */}
         <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-r from-blue-600 to-purple-600">
-  <div className="container mx-auto max-w-7xl px-4 md:px-6">
+          <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center text-white">
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
                   ¿Listo para transformar tu experiencia académica?
                 </h2>
-                <p className="max-w-[600px] mx-auto text-blue-100 text-center md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-  Únete a miles de estudiantes que ya están alcanzando sus metas académicas con nuestra plataforma.
-</p>
-
+                <p className="max-w-[600px] text-blue-100 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Únete a miles de estudiantes que ya están alcanzando sus metas académicas con nuestra plataforma.
+                </p>
               </div>
               <div className="w-full max-w-sm space-y-2">
                 <form className="flex gap-2">
@@ -561,10 +556,22 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
-      
-      <FloatingChat />
-      <Footer />
+
+      {/* Footer */}
+      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t bg-gray-50">
+        <p className="text-xs text-gray-600">© 2024 TutorGo. Todos los derechos reservados.</p>
+        <nav className="sm:ml-auto flex gap-4 sm:gap-6">
+          <Link href="/privacidad" className="text-xs hover:underline underline-offset-4 text-gray-600">
+            Política de Privacidad
+          </Link>
+          <Link href="/terminos" className="text-xs hover:underline underline-offset-4 text-gray-600">
+            Términos de Servicio
+          </Link>
+          <Link href="/contacto" className="text-xs hover:underline underline-offset-4 text-gray-600">
+            Contacto
+          </Link>
+        </nav>
+      </footer>
     </div>
-    </ChatProvider>
   )
 }

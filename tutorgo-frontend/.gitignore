@@ -5,6 +5,9 @@
 /.pnp
 .pnp.js
 
+# Compilation
+.next/
+
 # testing
 /coverage
 
