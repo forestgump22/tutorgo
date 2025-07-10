@@ -5,6 +5,7 @@ import './globals.css'
 import { useEffect } from 'react'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { useAuthStore } from '@/stores/auth.store'
+import { ChatProvider } from "@/components/ai/floating-chat"
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -29,19 +30,19 @@ export default function RootLayout({
       'Falta el ID de cliente de Google. Añade NEXT_PUBLIC_GOOGLE_CLIENT_ID a tu .env.local'
     )
     return (
-      <html lang="es">
-        <body className={`${poppins.className} flex flex-col min-h-screen`}>
-          {children}
-        </body>
-      </html>
-    )
+        <html lang="es">
+          <body className={`${poppins.className} flex flex-col min-h-screen`}>
+            <ChatProvider>{children}</ChatProvider>
+          </body>
+        </html>
+    );
   }
 
   return (
     <html lang="es">
       <body className={`${poppins.className} flex flex-col min-h-screen`}>
         <GoogleOAuthProvider clientId={googleClientId}>
-          {children}
+          <ChatProvider>{children}</ChatProvider>
         </GoogleOAuthProvider>
       </body>
     </html>

@@ -16,9 +16,11 @@ import {
 import Image from "next/image"
 import Link from "next/link"
 import { Footer } from "@/components/shared/Footer"
+import FloatingChat, { ChatProvider } from "@/components/ai/floating-chat"
 
 export default function LandingPage() {
   return (
+    <ChatProvider>
     <div className="flex flex-col min-h-screen">
       {/* Header */}
       <header className="px-4 lg:px-6 h-16 flex items-center border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50">
@@ -559,8 +561,10 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
-
-      <Footer/>
+      
+      <FloatingChat />
+      <Footer />
     </div>
+    </ChatProvider>
   )
 }
