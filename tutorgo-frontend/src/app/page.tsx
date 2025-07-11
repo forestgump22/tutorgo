@@ -71,7 +71,7 @@ export default function LandingPage() {
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-                    <Link href="/registro">
+                    <Link href="/login">
                       Comenzar Ahora
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
@@ -243,7 +243,11 @@ export default function LandingPage() {
                     <span>Soporte académico continuo</span>
                   </li>
                 </ul>
-                <Button className="w-fit bg-green-600 hover:bg-green-700">Únete como Estudiante</Button>
+                <Button className="w-fit bg-green-600 hover:bg-green-700">
+                  <Link href={"/register"}>
+                  Únete como Estudiante
+                  </Link>
+                </Button>
               </div>
               <Image
                 src="/imagenes/paraestudiantes2.jpg"
@@ -295,7 +299,11 @@ export default function LandingPage() {
                     <span>Sistema de reputación y reseñas</span>
                   </li>
                 </ul>
-                <Button className="w-fit bg-orange-600 hover:bg-orange-700">Únete como Tutor</Button>
+                <Button className="w-fit bg-orange-600 hover:bg-orange-700">
+                  <Link href={"/register"}>
+                  Únete como Tutor
+                  </Link>
+                </Button>
               </div>
             </div>
           </div>
