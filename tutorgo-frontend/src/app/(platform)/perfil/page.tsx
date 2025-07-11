@@ -2,25 +2,24 @@
 
 import { useState, useEffect, type FormEvent } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
-import type { UpdateUserProfileRequest } from '@/models/auth.models'; 
-import { updateUserProfile } from '@/services/user.service'; 
+import type { UpdateUserProfileRequest, UserResponse } from '@/models/auth.models';
+import { updateUserProfile } from '@/services/user.service';
+import { updateTutorBio } from '@/services/tutor.service';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, Camera, CheckCircle, AlertCircle, Loader2, Edit } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, Camera } from "lucide-react";
 
 export default function ProfilePage() {
-  const { user, updateUser: setUserInStore, isLoading: isAuthLoading } = useAuthStore((state) => ({
-    user: state.user,
-    updateUser: state.updateUser,
-    isLoading: state.isLoading,
-  }));
-
+  const { user, updateUser: setUserInStore, isLoading: isAuthLoading } = useAuthStore();
+  
   const [nombre, setNombre] = useState('');
   const [fotoUrl, setFotoUrl] = useState('');
+  const [bio, setBio] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,6 +28,10 @@ export default function ProfilePage() {
     if (user) {
       setNombre(user.nombre);
       setFotoUrl(user.fotoUrl || '');
+      
+      if (user.rol === 'TUTOR' && user.tutorProfile) {
+        setBio(user.tutorProfile.bio || '');
+      }
     }
   }, [user]);
 
@@ -44,41 +47,39 @@ export default function ProfilePage() {
       return;
     }
 
-    const profileData: UpdateUserProfileRequest = { nombre, fotoUrl };
+    const promises: Promise<UserResponse | void>[] = [
+        updateUserProfile({ nombre, fotoUrl })
+    ];
+
+    if (user?.rol === 'TUTOR') {
+      promises.push(updateTutorBio(bio));
+    }
 
     try {
-      const updatedUser = await updateUserProfile(profileData);
-      setUserInStore(updatedUser);
+      const [updatedUserResponse] = await Promise.all(promises);
+
+      if (user && updatedUserResponse) {
+          const newUserState = { 
+              ...user, 
+              ...(updatedUserResponse as UserResponse), 
+              tutorProfile: user.tutorProfile ? { ...user.tutorProfile, bio: bio } : undefined 
+          };
+          setUserInStore(newUserState);
+      }
+      
       setSuccessMessage("Perfil actualizado correctamente.");
     } catch (err: any) {
-      setError(err.message || "Error al actualizar el perfil");
+      setError(err.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isAuthLoading) {
-    return (
-        <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        </div>
-    );
+  if (isAuthLoading || !user) {
+    return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
-
-  if (!user) {
-    return (
-      <Card className="m-auto mt-10 max-w-md">
-          <CardContent className="p-8 text-center">
-            <AlertCircle className="h-12 w-12 mx-auto text-red-500 mb-4" />
-            <h2 className="text-xl font-semibold">Error</h2>
-            <p className="text-muted-foreground">No se pudo cargar la información del perfil.</p>
-          </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto space-y-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Mi Perfil</h1>
           <p className="text-muted-foreground">Actualiza tu información personal y foto de perfil.</p>

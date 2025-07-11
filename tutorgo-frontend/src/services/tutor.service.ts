@@ -15,8 +15,6 @@ export const getAllTutors = async (params: URLSearchParams): Promise<PagedRespon
   }
 };
 
-// ***** FUNCIÓN CORREGIDA/AÑADIDA AQUÍ *****
-// Esta es la función que tu página de perfil necesita.
 export const getTutorProfileById = async (tutorId: number): Promise<TutorProfile> => {
   try {
     const response = await api.get<TutorProfile>(`/tutores/${tutorId}`);
@@ -24,5 +22,23 @@ export const getTutorProfileById = async (tutorId: number): Promise<TutorProfile
   } catch (error: any) {
     console.error(`Error fetching profile for tutor ${tutorId}:`, error);
     throw new Error(error.response?.data?.message || 'No se pudo cargar el perfil del tutor.');
+  }
+};
+
+export const getFeaturedTutors = async (): Promise<TutorSummary[]> => {
+  try {
+    const params = new URLSearchParams({ sortBy: 'estrellasPromedio', sortDir: 'desc', size: '4' });
+    const response = await api.get<PagedResponse<TutorSummary>>(`/tutores?${params.toString()}`);
+    return response.data.content;
+  } catch (error: any) {
+    throw new Error("No se pudieron cargar los tutores destacados.");
+  }
+};
+
+export const updateTutorBio = async (bio: string): Promise<void> => {
+  try {
+    await api.put('/tutores/me/bio', { bio });
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'No se pudo actualizar la biografía.');
   }
 };

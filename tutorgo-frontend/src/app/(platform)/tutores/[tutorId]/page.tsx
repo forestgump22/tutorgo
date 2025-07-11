@@ -22,13 +22,10 @@ const renderStars = (rating: number) => {
   return stars;
 };
 
-export default async function TutorProfilePage({ params }: {
-  params: Promise<{ tutorId: string }>;
-}) {
-  const { tutorId } = await params;
-  const idNum = Number(tutorId);
+export default async function TutorProfilePage({ params }: { params: { tutorId: string } }) {
+  const tutorId = Number(params.tutorId);
 
-  if (isNaN(idNum)) {
+  if (isNaN(tutorId)) {
     return (
         <div className="text-center py-20">
             <h1 className="text-2xl font-bold text-red-600">ID de Tutor Inválido</h1>
@@ -41,7 +38,7 @@ export default async function TutorProfilePage({ params }: {
   let error: string | null = null;
 
   try {
-    tutor = await getTutorProfileById(idNum);
+    tutor = await getTutorProfileById(tutorId);
   } catch (e: any) {
     error = e.message;
   }
@@ -75,7 +72,6 @@ export default async function TutorProfilePage({ params }: {
               <div className="flex items-center justify-center sm:justify-start gap-2 mt-1 text-muted-foreground">
                 {renderStars(tutor.estrellasPromedio)}
                 <span className="font-semibold">{tutor.estrellasPromedio.toFixed(1)}</span>
-                <span>(34 reseñas)</span>
               </div>
             </div>
             <div className="text-center sm:text-right">

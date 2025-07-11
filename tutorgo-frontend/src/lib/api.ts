@@ -9,6 +9,8 @@ const api = axios.create({
   },
 });
 
+console.log(api.defaults.baseURL)
+
 // Interceptor para añadir el token de autorización
 api.interceptors.request.use(
   (config) => {

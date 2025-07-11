@@ -1,15 +1,12 @@
-// src/services/disponibilidad.service.ts
 import api from '@/lib/api';
 import { ConfirmarPagoRequest, ReservaTutoriaRequest, SesionResponse, Disponibilidad } from '@/models/sesion.models';
 
-// La interfaz para la solicitud de AÑADIR disponibilidad
 interface DisponibilidadRequest {
-    fecha: string;      // "YYYY-MM-DD"
-    horaInicio: string; // "HH:mm:ss"
-    horaFinal: string;  // "HH:mm:ss"
+    fecha: string;      
+    horaInicio: string; 
+    horaFinal: string;  
 }
 
-// Obtener la disponibilidad del tutor autenticado
 export const getMyDisponibilidad = async (): Promise<Disponibilidad[]> => {
     try {
         const response = await api.get<Disponibilidad[]>('/tutores/me/disponibilidades');
@@ -20,7 +17,6 @@ export const getMyDisponibilidad = async (): Promise<Disponibilidad[]> => {
     }
 };
 
-// Añadir una nueva disponibilidad
 export const addDisponibilidad = async (data: DisponibilidadRequest) => {
     try {
         const response = await api.post('/tutores/me/disponibilidades', data);
@@ -30,7 +26,6 @@ export const addDisponibilidad = async (data: DisponibilidadRequest) => {
     }
 };
 
-// Eliminar una disponibilidad
 export const deleteDisponibilidad = async (id: number) => {
     try {
         const response = await api.delete(`/tutores/me/disponibilidades/${id}`);

@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import { CentroEstudio } from '@/models/centroEstudio.models';
+import { CentroEstudio } from '@/models/centroEstudio';
 
 export const getAllCentrosEstudio = async (): Promise<CentroEstudio[]> => {
   try {

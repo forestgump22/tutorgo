@@ -1,4 +1,3 @@
-// src/services/resena.service.ts
 import api from '@/lib/api';
 import { ResenaRequest, ResenaResponse } from '@/models/resena.models';
 

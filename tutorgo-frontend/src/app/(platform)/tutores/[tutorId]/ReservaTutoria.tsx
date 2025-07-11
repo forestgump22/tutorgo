@@ -3,15 +3,16 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from 'next/navigation';
 import { Disponibilidad, ReservaTutoriaRequest } from "@/models/sesion.models";
-import { getDisponibilidadTutor, reservarTutoria } from "@/services/sesion.service";
+import { getDisponibilidadTutor } from "@/services/sesion.service";
+import { iniciarProcesoDePago } from "@/services/reserva.service"; 
 
-// Importando componentes de UI y lucide-react
+// Componentes UI de shadcn/ui
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, Clock, CreditCard, Minus, Plus, AlertCircle, Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Calendar, Clock, CreditCard, Minus, Plus, AlertCircle, Loader2 } from "lucide-react";
 
 export function ReservaTutoria({ tutorId, tarifaHora }: { tutorId: number, tarifaHora: number }) {
   const router = useRouter();
@@ -26,7 +27,7 @@ export function ReservaTutoria({ tutorId, tarifaHora }: { tutorId: number, tarif
   useEffect(() => {
     getDisponibilidadTutor(tutorId)
       .then(data => setDisponibilidad(data))
-      .catch((err) => setError(err.message || "No se pudo cargar la disponibilidad."))
+      .catch((err) => setError(err.message || "No se pudo cargar la disponibilidad. Intenta recargar."))
       .finally(() => setLoading(false));
   }, [tutorId]);
 
@@ -71,14 +72,14 @@ export function ReservaTutoria({ tutorId, tarifaHora }: { tutorId: number, tarif
     };
 
     try {
-      const sesionCreada = await reservarTutoria(reservaData);
-      router.push(`/checkout/${sesionCreada.id}`);
+      const pagoPendiente = await iniciarProcesoDePago(reservaData);
+      router.push(`/checkout/${pagoPendiente.id}`);
     } catch (err: any) {
       setError(err.message);
       setIsReserving(false);
     }
   };
-
+  
   const formatDate = (dateString: string) => new Date(dateString + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
   const formatTime = (dateTimeString: string) => new Date(dateTimeString).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 

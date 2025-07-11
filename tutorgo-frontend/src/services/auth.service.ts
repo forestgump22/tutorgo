@@ -30,6 +30,7 @@ export const getMe = async (): Promise<UserResponse> => {
     const response = await api.get<UserResponse>('/users/me/profile-details'); // OJO: Este endpoint debe existir en tu backend y devolver UserResponse.
                                                                        // Basado en tu UserController, tienes /users/me/profile que devuelve ApiResponse con UserResponse.
                                                                        // O si tu UserResponse en el login es completo, este 'getMe' no es estrictamente necesario para la rehidratación inicial.
+    console.log("Data: ", response);
     return response.data; // Ajusta esto si tu endpoint devuelve un ApiResponse anidado
   } catch (error: any) {
     console.error("Error obteniendo datos del usuario (getMe):", error);
