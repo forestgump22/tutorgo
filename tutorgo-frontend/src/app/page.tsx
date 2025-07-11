@@ -71,8 +71,10 @@ export default function LandingPage() {
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-                    Comenzar Ahora
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    <Link href="/registro">
+                      Comenzar Ahora
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
                   </Button>
                   <Button variant="outline" size="lg">
                     Ver Demo
