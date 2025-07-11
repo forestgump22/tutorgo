@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback, FormEvent } from 'react';
 import { PagedResponse, TutorSummary } from '@/models/tutor.models';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getAllTutors } from '@/services/tutor.service';
+import { Tema } from '@/models/tema.models';
+import { getAllTemas } from '@/services/tema.service';
+import { getTutorTemas } from '@/services/tutor-tema.service';
 import { Search, SlidersHorizontal, Calendar, Clock, Trash2, Star, Loader2, Frown, User as UserIcon, Filter, X } from 'lucide-react';
 import Link from 'next/link';
 
@@ -445,6 +448,9 @@ export function TutorClientPage() {
     const [error, setError] = useState<string | null>(null);
     const [query, setQuery] = useState(searchParams.get('query') || '');
     const [showMobileFilters, setShowMobileFilters] = useState(false);
+    const [temas, setTemas] = useState<Tema[]>([]);
+    const [temaSeleccionado, setTemaSeleccionado] = useState<number | null>(null);
+    const [filteredTutors, setFilteredTutors] = useState<TutorSummary[]>([]);
     
     const initialFilters = {
         puntuacion: searchParams.get('puntuacion') || '',
@@ -468,6 +474,31 @@ export function TutorClientPage() {
     useEffect(() => {
         fetchTutors();
     }, [fetchTutors]);
+
+    useEffect(() => {
+        getAllTemas().then(setTemas).catch(() => setTemas([]));
+    }, []);
+
+    useEffect(() => {
+        if (!temaSeleccionado) {
+            setFilteredTutors(tutorData?.content || []);
+            return;
+        }
+        // Filtrar tutores por tema seleccionado
+        const fetchFilteredTutors = async () => {
+            const filtered: TutorSummary[] = [];
+            for (const tutor of tutorData?.content || []) {
+                try {
+                    const tutorTemas = await getTutorTemas(tutor.tutorId);
+                    if (tutorTemas.some(tt => tt.temaId === temaSeleccionado)) {
+                        filtered.push(tutor);
+                    }
+                } catch {}
+            }
+            setFilteredTutors(filtered);
+        };
+        fetchFilteredTutors();
+    }, [temaSeleccionado, tutorData?.content]);
     
     const handleSearch = (e: FormEvent) => {
         e.preventDefault();
@@ -561,7 +592,7 @@ export function TutorClientPage() {
                                 </div>
                                 
                                 {/* Lista de tutores */}
-                                {tutorData.content.length === 0 ? (
+                                {filteredTutors.length === 0 ? (
                                     <Card className="text-center py-20 bg-white/80 backdrop-blur-sm border-0 shadow-lg">
                                         <div className="space-y-4">
                                             <div className="bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto">
@@ -582,7 +613,7 @@ export function TutorClientPage() {
                                     </Card>
                                 ) : (
                                     <div className="space-y-4">
-                                        {tutorData.content.map((tutor) => (
+                                        {filteredTutors.map((tutor) => (
                                             <TutorCard key={tutor.tutorId} tutor={tutor} />
                                         ))}
                                     </div>

@@ -8,6 +8,11 @@ import { PagoResponse } from '@/models/pago.models';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, Lock, CheckCircle, AlertCircle, CreditCard, Calendar, Clock } from 'lucide-react';
+import { StripePaymentForm } from '@/components/StripePaymentForm';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 export default function CheckoutPage() {
     const params = useParams();
@@ -85,46 +90,25 @@ export default function CheckoutPage() {
     
     return (
         <div className="flex items-center justify-center min-h-screen bg-secondary/30">
-            <Card className="w-full max-w-lg mx-auto shadow-2xl">
-                <CardHeader>
-                    <CardTitle className="text-2xl font-bold">Confirmar y Pagar</CardTitle>
-                    <CardDescription>Estás a un paso de reservar tu tutoría.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="bg-secondary/50 p-4 rounded-lg mb-6 space-y-3">
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">Tutor</p>
-                            <p className="font-semibold">{pago.nombreTutor}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">Descripción</p>
-                            <p className="font-semibold">{pago.descripcion}</p>
-                        </div>
-                    </div>
-
-                    <Card className="bg-background">
-                        <CardContent className="p-6">
-                             <div className="flex justify-between items-center">
-                                <p className="text-lg font-semibold">Total a Pagar</p>
-                                <p className="text-2xl font-bold text-primary">S/ {pago.monto.toFixed(2)}</p>
-                             </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="mt-6">
-                        <Button
-                            onClick={handleConfirmPayment}
-                            disabled={processing}
-                            className="w-full"
-                            size="lg"
-                        >
-                            {processing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
-                            {processing ? 'Procesando...' : 'Pagar Ahora'}
-                        </Button>
-                        <p className="text-xs text-muted-foreground mt-2 text-center">Simulación de pasarela de pago segura.</p>
-                    </div>
-                </CardContent>
-            </Card>
+            <Elements stripe={stripePromise}>
+                <StripePaymentForm
+                    amount={pago.monto}
+                    description={pago.descripcion}
+                    onTokenReceived={async (token) => {
+                        setProcessing(true);
+                        setError(null);
+                        try {
+                            // Aquí deberías llamar a un servicio que envíe el token y el pagoId al backend
+                            await confirmarPagoYCrearSesion(pagoId, token);
+                            setSuccess(true);
+                        } catch (err: any) {
+                            setError(err.message);
+                        } finally {
+                            setProcessing(false);
+                        }
+                    }}
+                />
+            </Elements>
         </div>
     );
 }

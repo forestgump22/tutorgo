@@ -40,10 +40,32 @@ public class UserMapper {
         TutorProfileResponse dto = new TutorProfileResponse();
         dto.setId(tutor.getId());
         dto.setTarifaHora(tutor.getTarifaHora());
-        dto.setRubro(tutor.getRubro());
+        
+        // Obtener el tema principal dinámicamente
+        String temaPrincipal = obtenerTemaPrincipal(tutor);
+        dto.setTemaPrincipal(temaPrincipal);
+        
         dto.setBio(tutor.getBio());
         dto.setEstrellasPromedio(tutor.getEstrellasPromedio());
+        
+        // Agregar información del usuario
+        if (tutor.getUser() != null) {
+            dto.setNombreUsuario(tutor.getUser().getNombre());
+            dto.setFotoUrlUsuario(tutor.getUser().getFotoUrl());
+        }
+        
         return dto;
+    }
+
+    private String obtenerTemaPrincipal(Tutor tutor) {
+        if (tutor.getTutorTemas() != null && !tutor.getTutorTemas().isEmpty()) {
+            // Obtener el primer tema asignado y buscar su tema padre
+            var primerTema = tutor.getTutorTemas().get(0).getTema();
+            if (primerTema.getTemaPadre() != null) {
+                return primerTema.getTemaPadre().getNombre();
+            }
+        }
+        return "Sin tema asignado";
     }
 
     public StudentProfileResponse estudianteToStudentProfileResponse(Estudiante estudiante) {

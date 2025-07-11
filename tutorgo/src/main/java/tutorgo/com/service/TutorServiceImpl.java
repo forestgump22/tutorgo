@@ -16,8 +16,6 @@ import tutorgo.com.model.Tutor;
 import tutorgo.com.model.User;
 import tutorgo.com.repository.TutorRepository;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,72 +29,42 @@ public class TutorServiceImpl implements TutorService {
 
     @Override
     @Transactional(readOnly = true)
-    public PagedResponse<TutorSummaryResponse> getAllTutores(
-            String query, Integer maxPrecio, Float puntuacion,
-            LocalDate fechaInicio, LocalDate fechaFin,
-            LocalTime horaInicio, LocalTime horaFin,
-            Pageable pageable) {
+    public PagedResponse<TutorSummaryResponse> getAllTutores(String query, Integer maxPrecio, Float puntuacion, Pageable pageable) {
 
+        // 1. Obtenemos los tutores filtrados solo por los campos numéricos (que no dan error)
         List<Tutor> tutoresPrefiltrados = tutorRepository.findWithNumericFilters(maxPrecio, puntuacion);
 
-        List<Tutor> tutoresDisponibles = tutoresPrefiltrados.stream().filter(tutor -> {
-            if (fechaInicio == null && fechaFin == null && horaInicio == null && horaFin == null) {
-                return true;
-            }
-
-            final LocalDate fInicio = (fechaInicio != null) ? fechaInicio : LocalDate.now();
-            final LocalDate fFin = (fechaFin != null) ? fechaFin : fInicio.plusYears(1); // Un rango por defecto amplio si solo se da una fecha
-            final LocalTime hInicio = (horaInicio != null) ? horaInicio : LocalTime.MIN;
-            final LocalTime hFin = (horaFin != null) ? horaFin : LocalTime.MAX;
-
-            if (fFin.isBefore(fInicio) || hFin.isBefore(hInicio)) {
-                return true;
-            }
-
-            return tutor.getDisponibilidades().stream().anyMatch(disp -> {
-                boolean fechaCoincide = !disp.getFecha().isBefore(fInicio) && !disp.getFecha().isAfter(fFin);
-                if (!fechaCoincide) {
-                    return false;
-                }
-
-                LocalTime dispInicio = disp.getHoraInicial().toLocalTime();
-                LocalTime dispFin = disp.getHoraFinal().toLocalTime();
-
-                boolean horaCoincide = dispInicio.isBefore(hFin) && dispFin.isAfter(hInicio);
-
-                return horaCoincide;
-            });
-        }).collect(Collectors.toList());
-
-
-
+        // 2. Si hay un término de búsqueda (query), filtramos la lista en memoria (en Java)
         List<Tutor> tutoresFiltrados;
         if (StringUtils.hasText(query)) {
             String lowerCaseQuery = query.trim().toLowerCase();
             tutoresFiltrados = tutoresPrefiltrados.stream()
                     .filter(tutor -> {
                         boolean nombreCoincide = tutor.getUser() != null && tutor.getUser().getNombre().toLowerCase().contains(lowerCaseQuery);
-                        boolean rubroCoincide = tutor.getRubro().toLowerCase().contains(lowerCaseQuery);
-                        return nombreCoincide || rubroCoincide;
+                        boolean temaPrincipalCoincide = obtenerTemaPrincipal(tutor).toLowerCase().contains(lowerCaseQuery);
+                        return nombreCoincide || temaPrincipalCoincide;
                     })
                     .collect(Collectors.toList());
         } else {
-            tutoresFiltrados = tutoresDisponibles;
+            tutoresFiltrados = tutoresPrefiltrados;
         }
 
+        // 3. Aplicamos la paginación manualmente a la lista final
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), tutoresFiltrados.size());
 
         List<Tutor> paginaDeTutores = (start <= end) ? tutoresFiltrados.subList(start, end) : Collections.emptyList();
 
+        // 4. Mapeamos solo la página de tutores a DTOs
         List<TutorSummaryResponse> dtos = tutorMapper.tutorsToTutorSummaryResponseList(paginaDeTutores);
 
+        // 5. Construimos el PagedResponse manualmente
         return new PagedResponse<>(
                 dtos,
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
-                tutoresFiltrados.size(),
-                (int) Math.ceil((double) tutoresFiltrados.size() / pageable.getPageSize()),
+                tutoresFiltrados.size(), // El total de elementos es el de la lista filtrada
+                (int) Math.ceil((double) tutoresFiltrados.size() / pageable.getPageSize()), // Cálculo de páginas totales
                 pageable.getPageNumber() >= (int) Math.ceil((double) tutoresFiltrados.size() / pageable.getPageSize()) - 1
         );
     }
@@ -110,7 +78,11 @@ public class TutorServiceImpl implements TutorService {
         TutorProfileResponse response = new TutorProfileResponse();
         response.setId(tutor.getId());
         response.setTarifaHora(tutor.getTarifaHora());
-        response.setRubro(tutor.getRubro());
+        
+        // Obtener el tema principal dinámicamente
+        String temaPrincipal = obtenerTemaPrincipal(tutor);
+        response.setTemaPrincipal(temaPrincipal);
+        
         response.setBio(tutor.getBio());
         response.setEstrellasPromedio(tutor.getEstrellasPromedio());
 
@@ -121,5 +93,16 @@ public class TutorServiceImpl implements TutorService {
         }
 
         return response;
+    }
+
+    private String obtenerTemaPrincipal(Tutor tutor) {
+        if (tutor.getTutorTemas() != null && !tutor.getTutorTemas().isEmpty()) {
+            // Obtener el primer tema asignado y buscar su tema padre
+            var primerTema = tutor.getTutorTemas().get(0).getTema();
+            if (primerTema.getTemaPadre() != null) {
+                return primerTema.getTemaPadre().getNombre();
+            }
+        }
+        return "Sin tema asignado";
     }
 };

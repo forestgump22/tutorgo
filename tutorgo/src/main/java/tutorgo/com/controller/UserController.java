@@ -3,10 +3,8 @@ package tutorgo.com.controller;
 import org.springframework.web.bind.annotation.*;
 import tutorgo.com.dto.request.UpdateUserProfileRequest;
 import tutorgo.com.dto.response.UserResponse;
-import org.springframework.http.HttpStatus;
 import tutorgo.com.dto.request.UpdatePasswordRequest;
 import tutorgo.com.dto.response.ApiResponse;
-import tutorgo.com.model.User;
 import tutorgo.com.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.data.domain.PageRequest; // Nuevos imports
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 
 @RestController
 @RequestMapping("/users")

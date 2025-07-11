@@ -8,7 +8,7 @@ public class TutorProfileResponse {
     private String nombreUsuario;
     private String fotoUrlUsuario;
     private Integer tarifaHora;
-    private String rubro;
+    private String temaPrincipal; // Cambiado de rubro a temaPrincipal
     private String bio;
     private Float estrellasPromedio;
 }

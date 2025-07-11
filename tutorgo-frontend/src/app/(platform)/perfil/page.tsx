@@ -5,6 +5,10 @@ import { useAuthStore } from '@/stores/auth.store';
 import type { UpdateUserProfileRequest, UserResponse } from '@/models/auth.models';
 import { updateUserProfile } from '@/services/user.service';
 import { updateTutorBio } from '@/services/tutor.service';
+import { Tema } from '@/models/tema.models';
+import { getAllTemas } from '@/services/tema.service';
+import { getTutorTemas } from '@/services/tutor-tema.service';
+import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +28,14 @@ export default function ProfilePage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Gestión de subtemas para tutores
+  const [temas, setTemas] = useState<Tema[]>([]);
+  const [tutorTemas, setTutorTemas] = useState<any[]>([]);
+  const [temaSeleccionado, setTemaSeleccionado] = useState<number | null>(null);
+  const [nuevoSubtema, setNuevoSubtema] = useState('');
+  const [subtemaLoading, setSubtemaLoading] = useState(false);
+  const [subtemaError, setSubtemaError] = useState<string | null>(null);
+
   useEffect(() => {
     if (user) {
       setNombre(user.nombre);
@@ -32,6 +44,14 @@ export default function ProfilePage() {
       if (user.rol === 'TUTOR' && user.tutorProfile) {
         setBio(user.tutorProfile.bio || '');
       }
+    }
+  }, [user]);
+
+  // Cargar temas y temas del tutor
+  useEffect(() => {
+    if (user?.rol === 'TUTOR' && user.tutorProfile) {
+      getAllTemas().then(setTemas);
+      getTutorTemas(user.tutorProfile.id).then(setTutorTemas);
     }
   }, [user]);
 
@@ -72,6 +92,45 @@ export default function ProfilePage() {
       setError(err.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Agregar subtema
+  const handleAgregarSubtema = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!temaSeleccionado || !nuevoSubtema.trim()) return;
+    setSubtemaLoading(true);
+    setSubtemaError(null);
+    try {
+      await api.post('/tutor-temas', {
+        tutorId: user.tutorProfile.id,
+        temaId: temaSeleccionado,
+        subtemas: [nuevoSubtema.trim()]
+      });
+      setNuevoSubtema('');
+      // Refrescar lista
+      const nuevos = await getTutorTemas(user.tutorProfile.id);
+      setTutorTemas(nuevos);
+    } catch (err: any) {
+      setSubtemaError(err.message);
+    } finally {
+      setSubtemaLoading(false);
+    }
+  };
+
+  // Eliminar subtema
+  const handleEliminarSubtema = async (asignacionId: number) => {
+    setSubtemaLoading(true);
+    setSubtemaError(null);
+    try {
+      await api.delete(`/tutor-temas/${asignacionId}`);
+      // Refrescar lista
+      const nuevos = await getTutorTemas(user.tutorProfile.id);
+      setTutorTemas(nuevos);
+    } catch (err: any) {
+      setSubtemaError(err.message);
+    } finally {
+      setSubtemaLoading(false);
     }
   };
 
@@ -141,6 +200,52 @@ export default function ProfilePage() {
                 </form>
             </CardContent>
         </Card>
+        {user.rol === 'TUTOR' && (
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Mis Temas y Subtemas</CardTitle>
+          <CardDescription>Gestiona los subtemas que enseñas asociados a los temas disponibles.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAgregarSubtema} className="flex flex-col md:flex-row gap-4 mb-6">
+            <select
+              className="border rounded-md px-3 py-2"
+              value={temaSeleccionado ?? ''}
+              onChange={e => setTemaSeleccionado(e.target.value ? Number(e.target.value) : null)}
+              required
+            >
+              <option value="">Selecciona un tema</option>
+              {temas.map(tema => (
+                <option key={tema.id} value={tema.id}>{tema.nombre}</option>
+              ))}
+            </select>
+            <Input
+              placeholder="Nuevo subtema"
+              value={nuevoSubtema}
+              onChange={e => setNuevoSubtema(e.target.value)}
+              required
+            />
+            <Button type="submit" disabled={subtemaLoading}>
+              {subtemaLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : '+'}
+              Agregar Subtema
+            </Button>
+          </form>
+          {subtemaError && <Alert variant="destructive" className="mb-4"><AlertCircle className="h-4 w-4" /><AlertDescription>{subtemaError}</AlertDescription></Alert>}
+          <div className="space-y-4">
+            {tutorTemas.length === 0 && <p className="text-gray-500">No tienes subtemas registrados.</p>}
+            {tutorTemas.map((tt) => (
+              <div key={tt.id} className="flex items-center gap-4 border-b pb-2">
+                <span className="font-semibold">{temas.find(t => t.id === tt.temaId)?.nombre || 'Tema'}</span>
+                <span className="text-gray-700">{tt.subtemas?.join(', ')}</span>
+                <Button variant="destructive" size="sm" onClick={() => handleEliminarSubtema(tt.id)} disabled={subtemaLoading}>
+                  Eliminar
+                </Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    )}
     </div>
   );
 }

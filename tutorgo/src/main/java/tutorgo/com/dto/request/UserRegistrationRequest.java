@@ -26,10 +26,9 @@ public class UserRegistrationRequest {
     @NotNull(message = "El rol es obligatorio")
     private RoleName rol;
 
-
     private Long centroEstudioId;
     private Integer tarifaHora;
-    private String rubro;
+    private Long temaPrincipalId; // Cambiado de rubro a temaPrincipalId
     private String bio;
     private String fotoUrl;
 }

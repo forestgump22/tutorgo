@@ -27,21 +27,22 @@ import java.util.List;
 public class SesionController {
 
     private final SesionService sesionService;
-    private final PagoService pagoService;
+    private final PagoService pagoService; // Inyectar PagoService
 
 
     @PostMapping
-    @PreAuthorize("hasRole('ESTUDIANTE')")
     public ResponseEntity<ApiResponse> reservarTutoria(@Valid @RequestBody ReservaTutoriaRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String alumnoEmail = ((UserDetails) authentication.getPrincipal()).getUsername();
 
         SesionResponse sesionResponse = sesionService.reservarTutoria(alumnoEmail, request);
 
+        // HU8 Escenario 1
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse(true, "Tu solicitud ha sido enviada. El tutor la confirmará pronto.", sesionResponse));
     }
 
+    // Endpoint para que el alumno vea "Mis solicitudes" (sus sesiones)
     @GetMapping("/mis-solicitudes")
     @PreAuthorize("hasRole('ESTUDIANTE')")
     public ResponseEntity<List<SesionResponse>> getMisSolicitudes() {
@@ -54,6 +55,7 @@ public class SesionController {
         return ResponseEntity.ok(sesiones);
     }
 
+    // ***** NUEVO ENDPOINT PARA QUE EL TUTOR VEA SUS CLASES *****
     @GetMapping("/mis-clases")
     @PreAuthorize("hasRole('TUTOR')")
     public ResponseEntity<List<SesionResponse>> getMisClases() {
@@ -66,12 +68,15 @@ public class SesionController {
         return ResponseEntity.ok(sesiones);
     }
 
-    @PostMapping("/{sesionId}/pagos")
-    @PreAuthorize("hasRole('ESTUDIANTE')")
+    // Nuevo endpoint para HU10
+    @PostMapping("/{sesionId}/pagos") // Ej: POST /api/sesiones/123/pagos
     public ResponseEntity<ApiResponse> confirmarPagoYReservar(
-            @PathVariable Long sesionId,
+            @PathVariable Long sesionId, // sesionId viene del path
             @Valid @RequestBody ConfirmarPagoRequest pagoDetails) {
 
+        // Asegurarse que el sesionId del path y del body (si lo tuviera) coincidan o usar solo el del path.
+        // Aquí ConfirmarPagoRequest también tiene sesionId, podríamos validar que sean iguales.
+        // Por simplicidad, si el DTO tiene sesionId, debe ser el mismo.
         if (!sesionId.equals(pagoDetails.getSesionId())) {
             throw new BadRequestException("El ID de la sesión en el path y en el cuerpo de la solicitud no coinciden.");
         }
@@ -81,6 +86,7 @@ public class SesionController {
 
         PagoResponse pagoResponse = pagoService.procesarPagoYConfirmarSesion(alumnoEmail, pagoDetails);
 
+        // HU10 Escenario 1
         return ResponseEntity.ok(new ApiResponse(true, "Pago exitoso. Te esperamos en la tutoría.", pagoResponse));
     }
 }

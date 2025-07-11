@@ -7,7 +7,7 @@ public class TutorSummaryResponse {
     private Long tutorId;
     private String nombreUsuario;
     private String fotoUrlUsuario;
-    private String rubro;
+    private String temaPrincipal; // Cambiado de rubro a temaPrincipal
     private Float estrellasPromedio;
     private Integer tarifaHora;
 }

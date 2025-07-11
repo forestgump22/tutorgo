@@ -1,18 +1,21 @@
 package tutorgo.com.model;
 
+import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import tutorgo.com.enums.EstadoSesionEnum;
-import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import tutorgo.com.enums.EstadoSesionEnum;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@NoArgsConstructor@AllArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 @Entity
 @Table(name = "sesiones")

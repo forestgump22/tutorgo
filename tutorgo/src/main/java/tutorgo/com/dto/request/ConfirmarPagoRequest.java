@@ -2,7 +2,7 @@ package tutorgo.com.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import tutorgo.com.enums.MetodoPagoEnum; // Asegúrate que este enum exista
+import tutorgo.com.enums.MetodoPagoEnum;
 
 @Data
 public class ConfirmarPagoRequest {
@@ -13,7 +13,5 @@ public class ConfirmarPagoRequest {
     @NotNull(message = "El método de pago es obligatorio")
     private MetodoPagoEnum metodoPago;
 
-    // Podríamos añadir aquí campos simulados de tarjeta si quisiéramos que el DTO los llevara,
-    // pero como no los vamos a procesar/validar realmente, mantenerlo simple es mejor.
-    // El frontend se encargaría de recolectar los detalles reales de la tarjeta.
+    private String token;
 }

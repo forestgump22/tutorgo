@@ -19,7 +19,11 @@ public class TutorMapper {
         }
         TutorSummaryResponse response = new TutorSummaryResponse();
         response.setTutorId(tutor.getId());
-        response.setRubro(tutor.getRubro());
+        
+        // Obtener el tema principal dinámicamente
+        String temaPrincipal = obtenerTemaPrincipal(tutor);
+        response.setTemaPrincipal(temaPrincipal);
+        
         response.setEstrellasPromedio(tutor.getEstrellasPromedio());
         User user = tutor.getUser();
         if (user != null) {
@@ -41,4 +45,14 @@ public class TutorMapper {
                 .collect(Collectors.toList());
     }
 
+    private String obtenerTemaPrincipal(Tutor tutor) {
+        if (tutor.getTutorTemas() != null && !tutor.getTutorTemas().isEmpty()) {
+            // Obtener el primer tema asignado y buscar su tema padre
+            var primerTema = tutor.getTutorTemas().get(0).getTema();
+            if (primerTema.getTemaPadre() != null) {
+                return primerTema.getTemaPadre().getNombre();
+            }
+        }
+        return "Sin tema asignado";
+    }
 }

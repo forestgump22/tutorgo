@@ -30,8 +30,8 @@ public class Tutor {
     @Column(name = "tarifa_hora", nullable = false)
     private Integer tarifaHora;
 
-    @Column(length = 150, nullable = false, columnDefinition = "TEXT")
-    private String rubro;
+    @OneToMany(mappedBy = "tutor", cascade = CascadeType.ALL)
+    private List<TutorTema> tutorTemas = new ArrayList<>();
 
     @Column(columnDefinition = "TEXT")
     private String bio;

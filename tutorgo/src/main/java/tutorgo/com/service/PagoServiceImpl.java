@@ -1,6 +1,10 @@
 package tutorgo.com.service;
 
+import com.stripe.Stripe;
+import com.stripe.exception.StripeException;
+import com.stripe.model.Charge;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,7 +26,9 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -30,6 +36,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class PagoServiceImpl implements PagoService {
+    @Value("${stripe.secret.key}")
+    private String stripeSecretKey;
 
     private final UserRepository userRepository;
     private final EstudianteRepository estudianteRepository;
@@ -53,6 +61,9 @@ public class PagoServiceImpl implements PagoService {
         Sesion sesion = sesionRepository.findById(request.getSesionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Sesión no encontrada con ID: " + request.getSesionId()));
 
+        System.out.println("Token recibido: " + request.getToken());
+        System.out.println("MetodoPago recibido: " + request.getMetodoPago());
+
         if (!Objects.equals(sesion.getEstudiante().getId(), alumno.getId())) {
             throw new ForbiddenException("No tienes permiso para pagar esta sesión.");
         }
@@ -73,6 +84,15 @@ public class PagoServiceImpl implements PagoService {
         BigDecimal tarifaPorMinuto = BigDecimal.valueOf(tutor.getTarifaHora()).divide(BigDecimal.valueOf(60), 2, BigDecimal.ROUND_HALF_UP);
         BigDecimal montoTotal = tarifaPorMinuto.multiply(BigDecimal.valueOf(duracionMinutos));
         BigDecimal comision = montoTotal.multiply(PORCENTAJE_COMISION_PLATAFORMA).setScale(2, BigDecimal.ROUND_HALF_UP);
+
+        if (request.getToken() == null || request.getToken().isEmpty()) {
+            throw new BadRequestException("Token de Stripe no proporcionado.");
+        }
+
+        boolean pagoAprobado = procesarPagoConStripe(request.getToken(), montoTotal);
+        if (!pagoAprobado) {
+            throw new BadRequestException("El pago fue rechazado por Stripe.");
+        }
 
         Pago pago = new Pago();
         pago.setEstudiante(alumno);
@@ -95,6 +115,26 @@ public class PagoServiceImpl implements PagoService {
         }
         return pagoDto;
     }
+
+    private boolean procesarPagoConStripe(String token, BigDecimal monto) {
+        Stripe.apiKey = stripeSecretKey;
+
+        try {
+            Map<String, Object> chargeParams = new HashMap<>();
+            chargeParams.put("amount", monto.multiply(BigDecimal.valueOf(100)).intValue()); // en centavos
+            chargeParams.put("currency", "usd");
+            chargeParams.put("source", token);
+            chargeParams.put("description", "Pago de sesión en TutorGo");
+
+            Charge charge = Charge.create(chargeParams);
+            return "succeeded".equals(charge.getStatus());
+
+        } catch (StripeException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 
     private void ajustarDisponibilidadDelTutor(Sesion sesionConfirmada) {
         // ... (implementación existente de ajustarDisponibilidadDelTutor)

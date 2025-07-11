@@ -48,10 +48,10 @@ public class NotificacionServiceImpl implements NotificacionService {
 
     // Mappers privados para convertir entidades a DTOs comunes
     private NotificacionResponse mapToResponse(NotificacionEstudiante n) {
-        return new NotificacionResponse(n.getId(), n.getTitulo(), n.getTexto(), n.getTipo().name(), n.getFechaCreacion());
+        return NotificacionResponse.fromEntity(n);
     }
 
     private NotificacionResponse mapToResponse(NotificacionTutor n) {
-        return new NotificacionResponse(n.getId(), n.getTitulo(), n.getTexto(), n.getTipo().name(), n.getFechaCreacion());
+        return NotificacionResponse.fromEntity(n);
     }
 }

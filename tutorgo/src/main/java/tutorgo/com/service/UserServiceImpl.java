@@ -13,10 +13,12 @@ import tutorgo.com.model.Estudiante;
 import tutorgo.com.model.Role;
 import tutorgo.com.model.Tutor;
 import tutorgo.com.model.User;
+import tutorgo.com.model.Tema;
 import tutorgo.com.repository.EstudianteRepository;
 import tutorgo.com.repository.RoleRepository;
 import tutorgo.com.repository.TutorRepository;
 import tutorgo.com.repository.UserRepository;
+import tutorgo.com.repository.TemaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ public class UserServiceImpl implements UserService {
     private final TutorRepository tutorRepository;
     private final EstudianteRepository estudianteRepository;
     private final CentroEstudioRepository centroEstudioRepository;
+    private final TemaRepository temaRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
 
@@ -57,14 +60,23 @@ public class UserServiceImpl implements UserService {
         User savedUser = userRepository.save(user);
 
         if (userRole.getNombre() == RoleName.TUTOR) {
-            if (request.getTarifaHora() == null || !StringUtils.hasText(request.getRubro())) {
+            if (request.getTarifaHora() == null || request.getTemaPrincipalId() == null) {
                 userRepository.delete(savedUser);
-                throw new BadRequestException("Para el rol TUTOR, la tarifa por hora y el rubro son obligatorios.");
+                throw new BadRequestException("Para el rol TUTOR, la tarifa por hora y el tema principal son obligatorios.");
             }
+            
+            // Validar que el tema principal existe y no tiene padre (es un tema principal)
+            Tema temaPrincipal = temaRepository.findById(request.getTemaPrincipalId())
+                    .orElseThrow(() -> new BadRequestException("El tema principal seleccionado no es válido."));
+            
+            if (temaPrincipal.getTemaPadre() != null) {
+                userRepository.delete(savedUser);
+                throw new BadRequestException("Solo se puede seleccionar un tema principal, no un subtema.");
+            }
+            
             Tutor tutorProfile = new Tutor();
             tutorProfile.setUser(savedUser);
             tutorProfile.setTarifaHora(request.getTarifaHora());
-            tutorProfile.setRubro(request.getRubro());
             tutorProfile.setBio(request.getBio());
             tutorProfile.setEstrellasPromedio(0.0f);
             Tutor savedTutorProfile = tutorRepository.save(tutorProfile);

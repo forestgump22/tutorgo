@@ -5,6 +5,11 @@ import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCreditCard, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { StripeSaveCardForm } from '@/components/StripeSaveCardForm';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 // Definimos la interfaz aquí mismo para simplicidad
 interface MetodoPagoGuardado {
@@ -36,9 +41,7 @@ const CreditCard = ({ card }: { card: MetodoPagoGuardado }) => (
 
 export default function MetodosPagoPage() {
     // Simulamos las tarjetas guardadas con un estado local
-    const [tarjetas, setTarjetas] = useState<MetodoPagoGuardado[]>([
-        { id: '1', tipo: 'Visa', ultimosCuatro: '4242', expiracion: '12/25' }
-    ]);
+    const [tarjetas, setTarjetas] = useState<MetodoPagoGuardado[]>([]); // Comenzar vacío
     const [showForm, setShowForm] = useState(false);
     
     // Estado para el formulario
@@ -99,6 +102,7 @@ export default function MetodosPagoPage() {
                     <h1 className="text-2xl font-bold text-gray-800 mb-6">Mis Métodos de Pago</h1>
                     
                     <div className="space-y-6 mb-8">
+                        {tarjetas.length === 0 && <p className="text-gray-500">No tienes tarjetas guardadas.</p>}
                         {tarjetas.map(card => <CreditCard key={card.id} card={card} />)}
                     </div>
 
@@ -108,32 +112,24 @@ export default function MetodosPagoPage() {
                             Añadir Nuevo Método de Pago
                         </button>
                     ) : (
-                        <form onSubmit={handleSubmit} className="p-6 border border-gray-200 rounded-lg space-y-4 animate-fadeIn">
-                            <h3 className="font-semibold text-lg">Nueva Tarjeta</h3>
-                            <div>
-                                <label htmlFor="titular" className="block text-sm font-medium text-gray-700">Nombre del Titular</label>
-                                <input type="text" id="titular" value={titular} onChange={e => setTitular(e.target.value)} required className="mt-1 w-full p-2 border rounded-md"/>
-                            </div>
-                            <div>
-                                <label htmlFor="numero" className="block text-sm font-medium text-gray-700">Número de Tarjeta</label>
-                                <input type="text" id="numero" value={numero} onChange={e => setNumero(e.target.value)} placeholder="0000 0000 0000 0000" required className="mt-1 w-full p-2 border rounded-md"/>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="expiracion" className="block text-sm font-medium text-gray-700">Expiración (MM/AA)</label>
-                                    <input type="text" id="expiracion" value={expiracion} onChange={e => setExpiracion(e.target.value)} placeholder="MM/AA" required className="mt-1 w-full p-2 border rounded-md"/>
-                                </div>
-                                <div>
-                                    <label htmlFor="cvv" className="block text-sm font-medium text-gray-700">CVV</label>
-                                    <input type="text" id="cvv" value={cvv} onChange={e => setCvv(e.target.value)} placeholder="123" required className="mt-1 w-full p-2 border rounded-md"/>
-                                </div>
-                            </div>
-                            {error && <p className="text-red-500 text-sm">{error}</p>}
-                            <div className="flex justify-end gap-4">
-                                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
-                                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Guardar Tarjeta</button>
-                            </div>
-                        </form>
+                        <Elements stripe={stripePromise}>
+                            <StripeSaveCardForm
+                                onCardSaved={async (token) => {
+                                    // Aquí deberías llamar a un servicio que guarde la tarjeta en el backend y actualice la lista
+                                    // Simulación: agregar tarjeta dummy
+                                    setTarjetas(prev => [
+                                        ...prev,
+                                        {
+                                            id: Date.now().toString(),
+                                            tipo: 'Visa', // En producción, obtén esto del backend/Stripe
+                                            ultimosCuatro: token.slice(-4),
+                                            expiracion: '12/25', // En producción, obtén esto del backend/Stripe
+                                        }
+                                    ]);
+                                    setShowForm(false);
+                                }}
+                            />
+                        </Elements>
                     )}
                 </div>
             </div>

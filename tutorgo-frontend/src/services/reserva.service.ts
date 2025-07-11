@@ -16,9 +16,12 @@ export const iniciarProcesoDePago = async (reservaData: ReservaTutoriaRequest): 
     }
 };
 
-export const confirmarPagoYCrearSesion = async (pagoId: number): Promise<PagoResponse> => {
+export const confirmarPagoYCrearSesion = async (pagoId: number, stripeToken?: string): Promise<PagoResponse> => {
     try {
-        const response = await api.post<ApiResponse<PagoResponse>>(`/reservas/confirmar-pago/${pagoId}`);
+        const response = await api.post<ApiResponse<PagoResponse>>(
+            `/reservas/confirmar-pago/${pagoId}`,
+            stripeToken ? { token: stripeToken } : undefined
+        );
         if (response.data && response.data.success) {
             return response.data.data;
         }
