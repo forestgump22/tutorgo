@@ -35,92 +35,11 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const [toastNotification, setToastNotification] = useState<{ title: string; message: string } | null>(null);
 
-  // WebSocket para notificaciones en tiempo real (opcional)
   useEffect(() => {
     if (!token) return;
 
-    // WebSocket habilitado para notificaciones en tiempo real
-    console.log('🔌 WebSocket temporalmente deshabilitado para evitar errores de conexión');
+    console.log('WebSocket temporalmente deshabilitado para evitar errores de conexión');
 
-    // Comentado temporalmente para evitar errores de conexión
-    /*
-    let ws: WebSocket | null = null;
-    let reconnectTimeout: NodeJS.Timeout | null = null;
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 2; // Reducir intentos
-
-    const connectWebSocket = () => {
-      try {
-        // Intentar conectar con WebSocket nativo primero
-        const wsUrl = process.env.NODE_ENV === 'production' 
-          ? 'wss://tu-dominio.com/ws/websocket' 
-          : 'ws://localhost:8080/ws/websocket';
-        
-        console.log('Intentando conectar WebSocket a:', wsUrl);
-        ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-          console.log('✅ WebSocket conectado exitosamente');
-          reconnectAttempts = 0;
-        };
-
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data.type === 'NOTIFICACION') {
-              // Mostrar toast de notificación
-              setToastNotification({
-                title: data.payload.titulo,
-                message: data.payload.texto
-              });
-            }
-          } catch (error) {
-            console.error('Error al procesar mensaje WebSocket:', error);
-          }
-        };
-
-        ws.onclose = (event) => {
-          console.log('❌ WebSocket desconectado:', event.code, event.reason);
-          
-          // Solo intentar reconectar si no fue un cierre intencional y no hemos excedido intentos
-          if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
-            reconnectAttempts++;
-            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 5000); // Reducir delay máximo
-            
-            reconnectTimeout = setTimeout(() => {
-              console.log(`🔄 Intentando reconectar WebSocket... (${reconnectAttempts}/${maxReconnectAttempts})`);
-              connectWebSocket();
-            }, delay);
-          } else if (reconnectAttempts >= maxReconnectAttempts) {
-            console.log('⚠️ WebSocket: Máximo de intentos alcanzado, deshabilitando reconexión automática');
-          }
-        };
-
-        ws.onerror = (error) => {
-          console.error('Error en WebSocket:', error);
-          // No hacer nada más, solo log del error
-        };
-
-      } catch (error) {
-        console.error('Error al conectar WebSocket:', error);
-        // No hacer nada más, solo log del error
-      }
-    };
-
-    // Solo intentar conectar si estamos en desarrollo
-    if (process.env.NODE_ENV === 'development') {
-      connectWebSocket();
-    }
-
-    return () => {
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-      }
-      if (ws) {
-        ws.close(1000, 'Cierre intencional');
-      }
-    };
-    */
   }, [token]);
 
   const handleLogout = () => {
