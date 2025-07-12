@@ -1,9 +1,22 @@
-FROM openjdk:21-jdk-slim
+# Etapa de construcción
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 
-ARG JAR_FILE=target/com-0.0.1.jar
+WORKDIR /app
 
-COPY ${JAR_FILE} tutorgo-api.jar
+COPY pom.xml .
+COPY src ./src
+
+RUN mvn clean package -DskipTests
+
+# Etapa de ejecución
+FROM eclipse-temurin:21-jdk
+
+WORKDIR /app
+
+COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "tutorgo-api.jar"]
+ENV PORT=8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
