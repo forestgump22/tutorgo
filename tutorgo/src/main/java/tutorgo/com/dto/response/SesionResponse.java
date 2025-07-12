@@ -28,4 +28,8 @@ public class SesionResponse {
 
     private List<EnlaceSesionResponseDTO> enlaces;
     private boolean fueCalificada;
+    
+    // Fields for payment calculation
+    private java.math.BigDecimal monto;
+    private String descripcion;
 }

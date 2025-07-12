@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Disponibilidad, ReservaTutoriaRequest } from "@/models/sesion.models";
 import { getDisponibilidadTutor } from "@/services/sesion.service";
 import { iniciarProcesoDePago } from "@/services/reserva.service"; 
+import api from '@/lib/api';
 
 // Componentes UI de shadcn/ui
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,10 +73,24 @@ export function ReservaTutoria({ tutorId, tarifaHora }: { tutorId: number, tarif
     };
 
     try {
-      const pagoPendiente = await iniciarProcesoDePago(reservaData);
-      router.push(`/checkout/${pagoPendiente.id}`);
+      // 1. Reservar la tutoría y obtener la sesión creada
+      const sesionResponse = await api.post('/sesiones', reservaData);
+      console.log('SESION RESPONSE (raw):', sesionResponse);
+      console.log('SESION RESPONSE data:', sesionResponse.data);
+      if (sesionResponse.data && typeof sesionResponse.data === 'object') {
+        console.log('SESION RESPONSE data.keys:', Object.keys(sesionResponse.data));
+        if ('data' in sesionResponse.data) {
+          console.log('SESION RESPONSE data.data:', sesionResponse.data.data);
+        }
+      }
+      const sesion = sesionResponse.data.data;
+      if (!sesion || !sesion.id) throw new Error('No se pudo crear la sesión.');
+
+      // 2. Redirigir al checkout con el ID de la sesión
+      router.push(`/checkout/${sesion.id}`);
     } catch (err: any) {
-      setError(err.message);
+      console.error('ERROR AL CREAR SESION O PAGO:', err);
+      setError(err.response?.data?.message || err.message || 'Error al procesar la reserva.');
       setIsReserving(false);
     }
   };

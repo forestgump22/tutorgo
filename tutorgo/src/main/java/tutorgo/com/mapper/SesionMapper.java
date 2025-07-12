@@ -53,6 +53,21 @@ public class SesionMapper {
         response.setHoraFinal(sesion.getHoraFinal());
         response.setTipoEstado(sesion.getTipoEstado());
         response.setFueCalificada(sesion.getResena() != null);
+        
+        // Calculate amount and description
+        if (sesion.getTutor() != null && sesion.getTutor().getTarifaHora() != null) {
+            long duracionMinutos = java.time.Duration.between(sesion.getHoraInicial(), sesion.getHoraFinal()).toMinutes();
+            java.math.BigDecimal tarifaPorMinuto = java.math.BigDecimal.valueOf(sesion.getTutor().getTarifaHora())
+                    .divide(java.math.BigDecimal.valueOf(60), 2, java.math.BigDecimal.ROUND_HALF_UP);
+            java.math.BigDecimal montoTotal = tarifaPorMinuto.multiply(java.math.BigDecimal.valueOf(duracionMinutos));
+            response.setMonto(montoTotal);
+            
+            String descripcion = String.format("Tutoría con %s - %s", 
+                    sesion.getTutor().getUser() != null ? sesion.getTutor().getUser().getNombre() : "Tutor",
+                    sesion.getFecha().toString());
+            response.setDescripcion(descripcion);
+        }
+        
         return response;
     }
 

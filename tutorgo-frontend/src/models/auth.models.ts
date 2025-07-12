@@ -41,7 +41,7 @@ export interface RegisterRequest {
   rol: RoleName;
   centroEstudioId?: number; 
   tarifaHora?: number;
-  rubro?: string;
+  temaPrincipalId?: number;
   bio?: string;
   fotoUrl?: string;
 }

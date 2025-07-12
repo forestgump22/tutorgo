@@ -97,4 +97,20 @@ public class SesionServiceImpl implements SesionService {
         List<Sesion> sesiones = sesionRepository.findByTutor_User_EmailOrderByFechaAscHoraInicialAsc(tutorEmail);
         return sesionMapper.toSesionResponseList(sesiones);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SesionResponse getSesionByIdAndAlumnoEmail(Long sesionId, String alumnoEmail) {
+        Estudiante alumno = estudianteRepository.findByUserEmail(alumnoEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Perfil de estudiante no encontrado"));
+        
+        Sesion sesion = sesionRepository.findById(sesionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Sesión no encontrada con ID: " + sesionId));
+        
+        if (!sesion.getEstudiante().getId().equals(alumno.getId())) {
+            throw new ResourceNotFoundException("Sesión no encontrada o no tienes permisos para acceder a ella.");
+        }
+        
+        return sesionMapper.toSesionResponse(sesion);
+    }
 }

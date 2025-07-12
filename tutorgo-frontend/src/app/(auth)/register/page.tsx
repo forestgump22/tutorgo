@@ -7,6 +7,8 @@ import { registerUser } from "@/services/auth.service"
 import type { RegisterRequest } from "@/models/auth.models"
 import type { CentroEstudio } from "@/models/centroEstudio"
 import { getAllCentrosEstudio } from "@/services/centroEstudio.service"
+import { getAllTemas } from "@/services/tema.service"
+import { Tema } from "@/models/tema.models"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -42,27 +44,35 @@ export default function RegisterPage() {
     rol: "ESTUDIANTE",
     centroEstudioId: undefined,
     tarifaHora: undefined,
-    rubro: "",
+    temaPrincipalId: undefined,
     bio: "",
     fotoUrl: "",
   })
 
   const [centrosEstudio, setCentrosEstudio] = useState<CentroEstudio[]>([])
+  const [temas, setTemas] = useState<Tema[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [debugInfo, setDebugInfo] = useState<string>("")
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
-    const fetchCentros = async () => {
+    const fetchData = async () => {
       try {
-        const data = await getAllCentrosEstudio()
-        setCentrosEstudio(data)
-      } catch (err) {
-        setError("No se pudieron cargar los centros de estudio. Intenta recargar la página.")
+        const [centrosData, temasData] = await Promise.all([
+          getAllCentrosEstudio(),
+          getAllTemas()
+        ])
+        setCentrosEstudio(centrosData)
+        setTemas(temasData)
+        setDebugInfo(`Temas cargados: ${temasData.length}`)
+      } catch (err: any) {
+        setError("No se pudieron cargar los datos necesarios. Intenta recargar la página.")
+        setDebugInfo(`Error: ${err.message}`)
       }
     }
-    fetchCentros()
+    fetchData()
   }, [])
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -76,7 +86,7 @@ export default function RegisterPage() {
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "centroEstudioId" ? Number(value) : value,
+      [name]: name === "centroEstudioId" || name === "temaPrincipalId" ? Number(value) : value,
     }))
   }
 
@@ -105,8 +115,8 @@ export default function RegisterPage() {
       setLoading(false)
       return
     }
-    if (formData.rol === "TUTOR" && (!formData.tarifaHora || !formData.rubro?.trim())) {
-      setError("Para tutores, la tarifa por hora y el rubro son obligatorios.")
+    if (formData.rol === "TUTOR" && (!formData.tarifaHora || !formData.temaPrincipalId)) {
+      setError("Para tutores, la tarifa por hora y el tema principal son obligatorios.")
       setLoading(false)
       return
     }
@@ -446,19 +456,31 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="rubro">Rubro o Especialidad Principal *</Label>
-              <div className="relative">
-                <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="rubro"
-                  name="rubro"
-                  type="text"
-                  value={formData.rubro}
-                  onChange={handleChange}
-                  className="pl-10"
-                  placeholder="Matemáticas, Física, Programación..."
-                />
+              <Label htmlFor="temaPrincipalId">Tema Principal de Especialización *</Label>
+              <div className="text-xs text-gray-500 mb-2">
+                Debug: {debugInfo} | Temas disponibles: {temas.length}
               </div>
+              <Select
+                value={formData.temaPrincipalId?.toString() || ""}
+                onValueChange={(value) => handleSelectChange("temaPrincipalId", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona tu tema principal de especialización" />
+                </SelectTrigger>
+                <SelectContent>
+                  {temas.length === 0 ? (
+                    <SelectItem value="" disabled>
+                      No hay temas disponibles
+                    </SelectItem>
+                  ) : (
+                    temas.map((tema) => (
+                      <SelectItem key={tema.id} value={tema.id.toString()}>
+                        {tema.nombre}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

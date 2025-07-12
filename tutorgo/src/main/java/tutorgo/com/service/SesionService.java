@@ -12,5 +12,5 @@ public interface SesionService {
     SesionResponse reservarTutoria(String alumnoEmail, ReservaTutoriaRequest request);
     List<SesionResponse> getSesionesByAlumnoEmail(String alumnoEmail);
     List<SesionResponse> getSesionesByTutorEmail(String tutorEmail);
-
+    SesionResponse getSesionByIdAndAlumnoEmail(Long sesionId, String alumnoEmail);
 }

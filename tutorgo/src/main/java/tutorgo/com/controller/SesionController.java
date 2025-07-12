@@ -68,6 +68,18 @@ public class SesionController {
         return ResponseEntity.ok(sesiones);
     }
 
+    // Endpoint para obtener una sesión específica por ID
+    @GetMapping("/{sesionId}")
+    @PreAuthorize("hasRole('ESTUDIANTE')")
+    public ResponseEntity<ApiResponse> getSesionById(@PathVariable Long sesionId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String alumnoEmail = ((UserDetails) authentication.getPrincipal()).getUsername();
+        
+        SesionResponse sesionResponse = sesionService.getSesionByIdAndAlumnoEmail(sesionId, alumnoEmail);
+        
+        return ResponseEntity.ok(new ApiResponse(true, "Sesión encontrada.", sesionResponse));
+    }
+
     // Nuevo endpoint para HU10
     @PostMapping("/{sesionId}/pagos") // Ej: POST /api/sesiones/123/pagos
     public ResponseEntity<ApiResponse> confirmarPagoYReservar(
@@ -88,5 +100,16 @@ public class SesionController {
 
         // HU10 Escenario 1
         return ResponseEntity.ok(new ApiResponse(true, "Pago exitoso. Te esperamos en la tutoría.", pagoResponse));
+    }
+
+    // Nuevo endpoint para crear un pago pendiente
+    @PostMapping("/{sesionId}/pagos/pendiente")
+    public ResponseEntity<ApiResponse> crearPagoPendiente(@PathVariable Long sesionId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String alumnoEmail = ((UserDetails) authentication.getPrincipal()).getUsername();
+
+        PagoResponse pagoResponse = pagoService.crearPagoPendiente(alumnoEmail, sesionId);
+
+        return ResponseEntity.ok(new ApiResponse(true, "Pago pendiente creado. Redirigiendo al checkout.", pagoResponse));
     }
 }

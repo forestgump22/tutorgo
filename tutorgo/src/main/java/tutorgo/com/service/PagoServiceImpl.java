@@ -14,6 +14,7 @@ import tutorgo.com.dto.response.PagedResponse;
 import tutorgo.com.dto.response.PagoResponse;
 import tutorgo.com.enums.EstadoPagoEnum;
 import tutorgo.com.enums.EstadoSesionEnum;
+import tutorgo.com.enums.MetodoPagoEnum;
 import tutorgo.com.enums.RoleName;
 import tutorgo.com.exception.BadRequestException;
 import tutorgo.com.exception.ForbiddenException;
@@ -111,6 +112,54 @@ public class PagoServiceImpl implements PagoService {
         PagoResponse pagoDto = pagoMapper.toPagoResponse(pagoGuardado);
         // Añadir sesionId al DTO si es necesario
         if (pagoDto != null) { // pagoMapper puede devolver null si pagoGuardado es null
+            pagoDto.setSesionId(sesion.getId());
+        }
+        return pagoDto;
+    }
+
+    @Override
+    @Transactional
+    public PagoResponse crearPagoPendiente(String alumnoEmail, Long sesionId) {
+        User userAlumno = userRepository.findByEmail(alumnoEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario alumno no encontrado: " + alumnoEmail));
+        Estudiante alumno = estudianteRepository.findByUser(userAlumno)
+                .orElseThrow(() -> new ResourceNotFoundException("Perfil de estudiante no encontrado para el usuario: " + alumnoEmail));
+
+        Sesion sesion = sesionRepository.findById(sesionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Sesión no encontrada con ID: " + sesionId));
+
+        if (!Objects.equals(sesion.getEstudiante().getId(), alumno.getId())) {
+            throw new ForbiddenException("No tienes permiso para crear un pago para esta sesión.");
+        }
+
+        if (sesion.getTipoEstado() != EstadoSesionEnum.PENDIENTE) {
+            throw new BadRequestException("Esta sesión no está pendiente de pago o ya ha sido procesada.");
+        }
+
+        Tutor tutor = sesion.getTutor();
+        if (tutor == null) {
+            throw new IllegalStateException("La sesión con ID " + sesion.getId() + " no tiene un tutor asignado.");
+        }
+
+        long duracionMinutos = Duration.between(sesion.getHoraInicial(), sesion.getHoraFinal()).toMinutes();
+        if (duracionMinutos <= 0) {
+            throw new BadRequestException("La duración de la sesión es inválida.");
+        }
+        BigDecimal tarifaPorMinuto = BigDecimal.valueOf(tutor.getTarifaHora()).divide(BigDecimal.valueOf(60), 2, BigDecimal.ROUND_HALF_UP);
+        BigDecimal montoTotal = tarifaPorMinuto.multiply(BigDecimal.valueOf(duracionMinutos));
+        BigDecimal comision = montoTotal.multiply(PORCENTAJE_COMISION_PLATAFORMA).setScale(2, BigDecimal.ROUND_HALF_UP);
+
+        Pago pago = new Pago();
+        pago.setEstudiante(alumno);
+        pago.setTutor(tutor);
+        pago.setMonto(montoTotal);
+        pago.setComisionPlataforma(comision);
+        pago.setMetodoPago(MetodoPagoEnum.TARJETA_CREDITO); // Default method
+        pago.setTipoEstado(EstadoPagoEnum.PENDIENTE);
+        Pago pagoGuardado = pagoRepository.save(pago);
+
+        PagoResponse pagoDto = pagoMapper.toPagoResponse(pagoGuardado);
+        if (pagoDto != null) {
             pagoDto.setSesionId(sesion.getId());
         }
         return pagoDto;

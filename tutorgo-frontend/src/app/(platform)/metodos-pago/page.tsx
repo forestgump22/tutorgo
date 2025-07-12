@@ -8,16 +8,11 @@ import { faCreditCard, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { StripeSaveCardForm } from '@/components/StripeSaveCardForm';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
+import { useSavedCards, MetodoPagoGuardado } from '@/hooks/useSavedCards';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-
-// Definimos la interfaz aquí mismo para simplicidad
-interface MetodoPagoGuardado {
-  id: string;
-  tipo: 'Visa' | 'Mastercard' | 'Otro';
-  ultimosCuatro: string;
-  expiracion: string; // "MM/AA"
-}
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
 
 // Componente para la tarjeta de crédito (visual)
 const CreditCard = ({ card }: { card: MetodoPagoGuardado }) => (
@@ -40,8 +35,7 @@ const CreditCard = ({ card }: { card: MetodoPagoGuardado }) => (
 
 
 export default function MetodosPagoPage() {
-    // Simulamos las tarjetas guardadas con un estado local
-    const [tarjetas, setTarjetas] = useState<MetodoPagoGuardado[]>([]); // Comenzar vacío
+    const { tarjetas, addCard } = useSavedCards();
     const [showForm, setShowForm] = useState(false);
     
     // Estado para el formulario
@@ -71,7 +65,7 @@ export default function MetodosPagoPage() {
             expiracion: expiracion,
         };
         
-        setTarjetas([...tarjetas, nuevaTarjeta]);
+        addCard(nuevaTarjeta);
         alert("Método de pago registrado correctamente");
 
         setShowForm(false);
@@ -112,24 +106,31 @@ export default function MetodosPagoPage() {
                             Añadir Nuevo Método de Pago
                         </button>
                     ) : (
-                        <Elements stripe={stripePromise}>
-                            <StripeSaveCardForm
-                                onCardSaved={async (token) => {
-                                    // Aquí deberías llamar a un servicio que guarde la tarjeta en el backend y actualice la lista
-                                    // Simulación: agregar tarjeta dummy
-                                    setTarjetas(prev => [
-                                        ...prev,
-                                        {
+                        stripePromise ? (
+                            <Elements stripe={stripePromise}>
+                                <StripeSaveCardForm
+                                    onCardSaved={async (token) => {
+                                        // Crear nueva tarjeta con el token de Stripe
+                                        const nuevaTarjeta: MetodoPagoGuardado = {
                                             id: Date.now().toString(),
                                             tipo: 'Visa', // En producción, obtén esto del backend/Stripe
                                             ultimosCuatro: token.slice(-4),
                                             expiracion: '12/25', // En producción, obtén esto del backend/Stripe
-                                        }
-                                    ]);
-                                    setShowForm(false);
-                                }}
-                            />
-                        </Elements>
+                                            stripeToken: token, // Guardar el token para usar en pagos
+                                        };
+                                        
+                                        addCard(nuevaTarjeta);
+                                        setShowForm(false);
+                                    }}
+                                />
+                            </Elements>
+                        ) : (
+                            <div className="p-4 border border-yellow-300 bg-yellow-50 rounded-lg">
+                                <p className="text-yellow-800">
+                                    Stripe no está configurado. Por favor, configura NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY en tu archivo .env.local
+                                </p>
+                            </div>
+                        )
                     )}
                 </div>
             </div>

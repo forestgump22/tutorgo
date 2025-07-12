@@ -101,9 +101,11 @@ export default async function TutorProfilePage({ params }: { params: Promise<{ t
                     <CardTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-blue-600" />Especialidades</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-2">
-                    {tutor.rubro.split(/, | |y/g).filter(s => s).map((specialty, index) => (
+                    {tutor.rubro ? tutor.rubro.split(/, | |y/g).filter(s => s).map((specialty, index) => (
                         <Badge key={index} variant="outline">{specialty}</Badge>
-                    ))}
+                    )) : (
+                        <p className="text-muted-foreground">No hay especialidades registradas</p>
+                    )}
                 </CardContent>
             </Card>
         </div>

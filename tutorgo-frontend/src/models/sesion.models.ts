@@ -21,6 +21,8 @@ export interface SesionResponse {
   tipoEstado: 'PENDIENTE' | 'CONFIRMADO';
   enlaces: EnlaceSesionResponse[];
   fueCalificada: boolean; // ***** CAMPO AÑADIDO *****
+  monto?: number;         // Amount for payment
+  descripcion?: string;   // Description for payment
 }
 
 // Para simular la disponibilidad del tutor
