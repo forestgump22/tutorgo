@@ -47,6 +47,7 @@ public class PagoServiceImpl implements PagoService {
     private final PagoRepository pagoRepository;
     private final DisponibilidadRepository disponibilidadRepository;
     private final PagoMapper pagoMapper;
+    // private final NotificacionSenderService notificacionSenderService; // Comentado temporalmente
 
     private static final BigDecimal PORCENTAJE_COMISION_PLATAFORMA = new BigDecimal("0.10");
 
@@ -106,6 +107,17 @@ public class PagoServiceImpl implements PagoService {
 
         sesion.setTipoEstado(EstadoSesionEnum.CONFIRMADO);
         sesionRepository.save(sesion);
+
+        // Enviar notificaciones de confirmación (con manejo de errores) - TEMPORALMENTE DESHABILITADO
+        /*
+        try {
+            // notificacionSenderService.enviarRecordatorioSesion(sesion); // Comentado temporalmente
+        } catch (Exception e) {
+            // Log del error pero no fallar el proceso de pago
+            System.err.println("Error al enviar notificaciones de sesión: " + e.getMessage());
+            // La notificación ya se guardó en la BD, solo falló el envío de email
+        }
+        */
 
         ajustarDisponibilidadDelTutor(sesion);
 

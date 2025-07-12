@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { deleteCookie } from 'cookies-next';
 import { useRouter, usePathname } from 'next/navigation';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { getContadorNoLeidas } from '@/services/notificacion.service';
 
 export function Navbar({ isLoggedIn: isLoggedInProp }: { isLoggedIn?: boolean }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -16,6 +17,7 @@ export function Navbar({ isLoggedIn: isLoggedInProp }: { isLoggedIn?: boolean })
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
   const logoutFromStore = useAuthStore((state) => state.logout);
+  const [notificacionesNoLeidas, setNotificacionesNoLeidas] = useState(0);
   
   const router = useRouter();
   const pathname = usePathname();
@@ -42,6 +44,28 @@ export function Navbar({ isLoggedIn: isLoggedInProp }: { isLoggedIn?: boolean })
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
+
+  // Cargar contador de notificaciones no leídas
+  useEffect(() => {
+    if (token) {
+      const cargarContador = async () => {
+        try {
+          const contador = await getContadorNoLeidas();
+          setNotificacionesNoLeidas(contador);
+        } catch (error) {
+          console.error('Error al cargar contador de notificaciones:', error);
+          // En caso de error, mantener el contador en 0
+          setNotificacionesNoLeidas(0);
+        }
+      };
+      
+      cargarContador();
+      
+      // Actualizar cada 60 segundos (reducir frecuencia)
+      const interval = setInterval(cargarContador, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [token]);
 
   const getNavLinks = () => {
     // Si no está autenticado, muestra los enlaces de la landing page.
@@ -111,8 +135,13 @@ export function Navbar({ isLoggedIn: isLoggedInProp }: { isLoggedIn?: boolean })
           <div className="flex items-center space-x-3">
             {isAuthenticated ? (
               <>
-                <Link href="/mis-notificaciones" title="Notificaciones" className="hidden md:inline-flex p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-blue-600">
+                <Link href="/mis-notificaciones" title="Notificaciones" className="hidden md:inline-flex relative p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-blue-600">
                   <Bell className="h-5 w-5" />
+                  {notificacionesNoLeidas > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                      {notificacionesNoLeidas > 99 ? '99+' : notificacionesNoLeidas}
+                    </span>
+                  )}
                 </Link>
                 
                 <DropdownMenu.Root>
@@ -194,6 +223,17 @@ export function Navbar({ isLoggedIn: isLoggedInProp }: { isLoggedIn?: boolean })
                   <div className="px-2 space-y-1">
                     <Link href="/dashboard" className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-blue-600"><LayoutDashboard className="mr-3 h-5 w-5" />Dashboard</Link>
                     <Link href="/perfil" className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-blue-600"><Settings className="mr-3 h-5 w-5" />Configuración</Link>
+                    <Link href="/mis-notificaciones" className="flex items-center justify-between px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-blue-600">
+                      <div className="flex items-center">
+                        <Bell className="mr-3 h-5 w-5" />
+                        Notificaciones
+                      </div>
+                      {notificacionesNoLeidas > 0 && (
+                        <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                          {notificacionesNoLeidas > 99 ? '99+' : notificacionesNoLeidas}
+                        </span>
+                      )}
+                    </Link>
                     <button onClick={handleLogout} className="w-full text-left flex items-center px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"><LogOut className="mr-3 h-5 w-5" />Cerrar Sesión</button>
                   </div>
               ) : (

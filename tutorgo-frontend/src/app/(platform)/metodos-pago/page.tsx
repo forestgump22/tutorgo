@@ -110,13 +110,12 @@ export default function MetodosPagoPage() {
                             <Elements stripe={stripePromise}>
                                 <StripeSaveCardForm
                                     onCardSaved={async (token) => {
-                                        // Crear nueva tarjeta con el token de Stripe
+                                        // Crear nueva tarjeta (sin guardar el token)
                                         const nuevaTarjeta: MetodoPagoGuardado = {
                                             id: Date.now().toString(),
                                             tipo: 'Visa', // En producción, obtén esto del backend/Stripe
-                                            ultimosCuatro: token.slice(-4),
-                                            expiracion: '12/25', // En producción, obtén esto del backend/Stripe
-                                            stripeToken: token, // Guardar el token para usar en pagos
+                                            ultimosCuatro: '****', // Placeholder, en producción obtén del backend
+                                            expiracion: '12/25', // Placeholder, en producción obtén del backend
                                         };
                                         
                                         addCard(nuevaTarjeta);

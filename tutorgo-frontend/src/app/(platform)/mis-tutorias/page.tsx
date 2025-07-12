@@ -166,7 +166,11 @@ export default function MisTutoriasPage() {
             setLoading(true);
             getMisTutorias()
                 .then(data => {
-                    const sortedData = data.sort((a, b) => new Date(a.horaInicial).getTime() - new Date(b.horaInicial).getTime());
+                    // Filtrar solo sesiones confirmadas (pagadas)
+                    const sesionesConfirmadas = data.filter(sesion => 
+                        sesion.tipoEstado === 'CONFIRMADO'
+                    );
+                    const sortedData = sesionesConfirmadas.sort((a, b) => new Date(a.horaInicial).getTime() - new Date(b.horaInicial).getTime());
                     setSesiones(sortedData);
                 })
                 .catch(err => setError(err.message))

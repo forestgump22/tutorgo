@@ -22,7 +22,10 @@ export default function DashboardPage() {
       setLoadingStats(true);
       getDashboardStats()
         .then(setStats)
-        .catch(console.error)
+        .catch((error) => {
+          console.error('Error al cargar dashboard stats:', error);
+          // No mostrar error al usuario, usar datos por defecto
+        })
         .finally(() => setLoadingStats(false));
     }
   }, [user]);

@@ -5,7 +5,7 @@ export interface MetodoPagoGuardado {
   tipo: 'Visa' | 'Mastercard' | 'Otro';
   ultimosCuatro: string;
   expiracion: string; // "MM/AA"
-  stripeToken?: string; // Token de Stripe para usar en pagos
+  paymentMethodId?: string; // Stripe Payment Method ID (reutilizable)
 }
 
 export const useSavedCards = () => {
@@ -17,7 +17,14 @@ export const useSavedCards = () => {
     if (savedCards) {
       try {
         const parsedCards = JSON.parse(savedCards);
-        setTarjetas(parsedCards);
+        // Limpiar tokens de Stripe si existen
+        const cleanedCards = parsedCards.map((card: any) => {
+          const { stripeToken, ...cleanCard } = card;
+          return cleanCard;
+        });
+        setTarjetas(cleanedCards);
+        // Guardar las tarjetas limpias
+        saveCardsToStorage(cleanedCards);
       } catch (error) {
         console.error('Error loading saved cards:', error);
       }

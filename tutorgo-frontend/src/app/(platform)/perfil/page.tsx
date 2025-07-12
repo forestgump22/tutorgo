@@ -98,18 +98,19 @@ export default function ProfilePage() {
   // Agregar subtema
   const handleAgregarSubtema = async (e: FormEvent) => {
     e.preventDefault();
-    if (!temaSeleccionado || !nuevoSubtema.trim()) return;
+    if (!temaSeleccionado || !nuevoSubtema.trim() || !user?.tutorProfile?.id) return;
     setSubtemaLoading(true);
     setSubtemaError(null);
     try {
+      const tutorId = user.tutorProfile.id;
       await api.post('/tutor-temas', {
-        tutorId: user.tutorProfile.id,
+        tutorId: tutorId,
         temaId: temaSeleccionado,
         subtemas: [nuevoSubtema.trim()]
       });
       setNuevoSubtema('');
       // Refrescar lista
-      const nuevos = await getTutorTemas(user.tutorProfile.id);
+      const nuevos = await getTutorTemas(tutorId);
       setTutorTemas(nuevos);
     } catch (err: any) {
       setSubtemaError(err.message);
@@ -120,12 +121,14 @@ export default function ProfilePage() {
 
   // Eliminar subtema
   const handleEliminarSubtema = async (asignacionId: number) => {
+    if (!user?.tutorProfile?.id) return;
     setSubtemaLoading(true);
     setSubtemaError(null);
     try {
+      const tutorId = user.tutorProfile.id;
       await api.delete(`/tutor-temas/${asignacionId}`);
       // Refrescar lista
-      const nuevos = await getTutorTemas(user.tutorProfile.id);
+      const nuevos = await getTutorTemas(tutorId);
       setTutorTemas(nuevos);
     } catch (err: any) {
       setSubtemaError(err.message);

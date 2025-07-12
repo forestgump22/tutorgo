@@ -174,40 +174,21 @@ export default function CheckoutPage() {
                                     />
                                 )}
 
-                                {/* Botón para pagar con tarjeta guardada */}
+                                {/* Información sobre tarjetas guardadas */}
                                 {selectedPaymentMethod === 'saved' && selectedCard && (
-                                    <Button 
-                                        onClick={async () => {
-                                            setProcessing(true);
-                                            setError(null);
-                                            try {
-                                                const selectedCardData = tarjetas.find(card => card.id === selectedCard);
-                                                if (!selectedCardData?.stripeToken) {
-                                                    throw new Error('Token de tarjeta no encontrado');
-                                                }
-                                                await confirmarPagoYCrearSesion(sesionId, selectedCardData.stripeToken);
-                                                setSuccess(true);
-                                            } catch (err: any) {
-                                                setError(err.message);
-                                            } finally {
-                                                setProcessing(false);
-                                            }
-                                        }}
-                                        disabled={processing}
-                                        className="w-full"
-                                    >
-                                        {processing ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Procesando pago...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <CreditCard className="mr-2 h-4 w-4" />
-                                                Pagar con tarjeta guardada
-                                            </>
-                                        )}
-                                    </Button>
+                                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <p className="text-sm text-blue-700">
+                                            <strong>Nota:</strong> Para usar una tarjeta guardada, necesitas ingresar los datos de la tarjeta nuevamente por seguridad. 
+                                            Los tokens de Stripe no se pueden reutilizar.
+                                        </p>
+                                        <Button 
+                                            onClick={() => setSelectedPaymentMethod('new')}
+                                            variant="outline"
+                                            className="mt-2"
+                                        >
+                                            Ingresar datos de tarjeta
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
                         </CardContent>
